@@ -32,6 +32,7 @@
 #include "bat/ads/mojom.h"
 #include "bat/ads/resources/grit/bat_ads_resources.h"
 #include "bat/ads/statement_info.h"
+#include "brave/browser/notifications/notification_platform_bridge_brave_custom_notification.h"
 #include "brave/browser/profiles/profile_util.h"
 #include "brave/common/brave_channel_info.h"
 #include "brave/components/brave_ads/browser/ad_notification.h"
@@ -55,6 +56,7 @@
 #include "chrome/browser/profiles/profile_manager.h"
 #include "chrome/browser/profiles/profile.h"
 #if !defined(OS_ANDROID)
+#include "brave/ui/brave_custom_notification/message_popup_view.h"
 #include "chrome/browser/ui/browser.h"
 #include "chrome/browser/ui/browser_finder.h"
 #endif
@@ -75,7 +77,6 @@
 #include "third_party/dom_distiller_js/dom_distiller.pb.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
-#include "ui/message_center/public/cpp/notification.h"
 
 #if defined(OS_ANDROID)
 #include "brave/browser/notifications/brave_notification_platform_bridge_helper_android.h"
@@ -2018,11 +2019,14 @@ std::string AdsServiceImpl::LoadDataResourceAndDecompressIfNeeded(
 
 void AdsServiceImpl::ShowNotification(
     const std::unique_ptr<ads::AdNotificationInfo> info) {
-  auto notification = CreateAdNotification(*info);
-
-  display_service_->Display(NotificationHandler::Type::BRAVE_ADS,
-      *notification, /*metadata=*/nullptr);
-
+  // Call NotificationPlatformBridgeBraveCustomNotification
+  std::unique_ptr<brave_custom_notification::Notification> notification =
+      CreateAdNotification(*info);
+  std::unique_ptr<NotificationPlatformBridgeBraveCustomNotification>
+    platform_bridge = std::make_unique<
+      NotificationPlatformBridgeBraveCustomNotification
+    >(profile_);
+  platform_bridge->Display(profile_, notification);
   StartNotificationTimeoutTimer(info->uuid);
 }
 
@@ -2062,14 +2066,11 @@ bool AdsServiceImpl::ShouldShowNotifications() {
 
 void AdsServiceImpl::CloseNotification(
     const std::string& uuid) {
-#if defined(OS_ANDROID)
-  const std::string brave_ads_url_prefix = kBraveAdsUrlPrefix;
-  const GURL service_worker_scope =
-      GURL(brave_ads_url_prefix.substr(0, brave_ads_url_prefix.size() - 1));
-  BraveNotificationPlatformBridgeHelperAndroid::MaybeRegenerateNotification(
-      uuid, service_worker_scope);
-#endif
-  display_service_->Close(NotificationHandler::Type::BRAVE_ADS, uuid);
+  std::unique_ptr<NotificationPlatformBridgeBraveCustomNotification>
+    platform_bridge = std::make_unique<
+      NotificationPlatformBridgeBraveCustomNotification
+    >(profile_);
+  platform_bridge->Close(profile_, uuid);
 }
 
 void AdsServiceImpl::UrlRequest(

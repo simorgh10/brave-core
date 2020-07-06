@@ -148,6 +148,8 @@ source_set("browser_process") {
     "//brave/components/speedreader:buildflags",
     "//brave/components/weekly_storage",
     "//brave/services/network/public/cpp",
+    "//brave/ui/brave_custom_notification",
+    "//brave/ui/brave_custom_notification/public/cpp",
     "//chrome/common",
     "//components/autofill/core/common",
     "//components/browsing_data/core",
@@ -230,6 +232,40 @@ source_set("browser_process") {
       "//brave/app:brave_generated_resources_grit",
     ]
   } else {
+    sources += [
+      "android/brave_relaunch_utils.cc",
+      "android/brave_shields_content_settings.cc",
+      "android/brave_shields_content_settings.h",
+      "android/brave_stats_updater_android.cc",
+    ]
+
+    if (brave_ads_enabled) {
+      deps += [
+        "//brave/components/brave_ads/browser",
+        "//brave/components/brave_ads/resources",
+        "//brave/components/services/bat_ads/public/cpp",
+        "//brave/vendor/bat-native-ads",
+        "brave_ads/android:jni_headers",
+      ]
+
+      sources += [
+        "brave_ads/android/brave_ads_native_helper.cc",
+        "brave_ads/android/brave_ads_native_helper.h",
+      ]
+    }
+
+    if (enable_brave_sync) {
+      sources += [
+        "android/brave_sync_worker.cc",
+        "android/brave_sync_worker.h",
+        "sync/brave_sync_devices_android.cc",
+        "sync/brave_sync_devices_android.h",
+      ]
+      deps += [
+        "//components/sync_device_info",
+      ]
+    }
+
     deps += [
       "android:android_browser_process",
     ]

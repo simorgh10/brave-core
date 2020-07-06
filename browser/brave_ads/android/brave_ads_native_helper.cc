@@ -3,18 +3,30 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "brave/browser/brave_ads/android/brave_ads_native_helper.h"
+
 #include "base/android/jni_android.h"
 #include "base/android/jni_string.h"
-#include "base/logging.h"
 #include "brave/browser/brave_ads/android/jni_headers/BraveAdsNativeHelper_jni.h"
-#include "brave/components/brave_ads/browser/ads_service.h"
-#include "brave/components/brave_ads/browser/ads_service_factory.h"
+// #include "brave/components/brave_ads/browser/ads_notification_handler.h"
+// #include "brave/components/brave_ads/browser/ads_service.h"
+// #include "brave/components/brave_ads/browser/ads_service_factory.h"
+// #include "brave/components/brave_ads/browser/ads_service_impl.h"
 #include "brave/components/l10n/browser/locale_helper_android.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_android.h"
 
 using base::android::JavaParamRef;
 using base::android::ScopedJavaLocalRef;
+
+namespace brave_ads {
+
+class AdsNotificationhandler;
+class AdsService;
+class AdsServiceFactory;
+class AdsServiceImpl;
+
+}
 
 namespace chrome {
 
@@ -85,6 +97,57 @@ void JNI_BraveAdsNativeHelper_SetAdsEnabled(
   }
 
   ads_service_->SetEnabled(true);
+}
+
+void JNI_BraveAdsNativeHelper_AdClicked(
+    JNIEnv* env,
+    const base::android::JavaParamRef<jobject>& j_profile_android,
+    const base::android::JavaParamRef<jstring>& j_notification_id) {
+  Profile* profile = ProfileAndroid::FromProfileAndroid(j_profile_android);
+  brave_ads::AdsServiceImpl* ads_service =
+    static_cast<brave_ads::AdsServiceImpl*>(
+      brave_ads::AdsServiceFactory::GetForProfile(profile));
+  if (!ads_service) {
+    NOTREACHED();
+    return;
+  }
+  std::string notification_id =
+    base::android::ConvertJavaStringToUTF8(env, j_notification_id);
+  std::unique_ptr<brave_ads::AdsNotificationHandler> handler =
+    std::make_unique<brave_ads::AdsNotificationHandler>(
+        static_cast<content::BrowserContext*>(profile));
+  handler->SetAdsService(ads_service);
+  handler->OnClick(profile,
+      GURL(""),
+      notification_id,
+      base::nullopt,
+      base::nullopt,
+      base::OnceClosure());
+}
+
+void JNI_BraveAdsNativeHelper_AdDismissed(
+    JNIEnv* env,
+    const base::android::JavaParamRef<jobject>& j_profile_android,
+    const base::android::JavaParamRef<jstring>& j_notification_id) {
+  Profile* profile = ProfileAndroid::FromProfileAndroid(j_profile_android);
+  brave_ads::AdsServiceImpl* ads_service =
+    static_cast<brave_ads::AdsServiceImpl*>(
+        brave_ads::AdsServiceFactory::GetForProfile(profile));
+  if (!ads_service) {
+    NOTREACHED();
+    return;
+  }
+  std::string notification_id =
+    base::android::ConvertJavaStringToUTF8(env, j_notification_id);
+  std::unique_ptr<brave_ads::AdsNotificationHandler> handler =
+    std::make_unique<brave_ads::AdsNotificationHandler>(
+        static_cast<content::BrowserContext*>(profile));
+  handler->SetAdsService(ads_service);
+  handler->OnClose(profile,
+      GURL(""),
+      notification_id,
+      true,
+      base::OnceClosure());
 }
 
 }  // namespace android

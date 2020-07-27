@@ -169,8 +169,8 @@ void Wallet::DisconnectAllWallets(ledger::ResultCallback callback) {
 }
 
 type::BraveWalletPtr Wallet::GetWallet() {
-  const std::string wallet_string = ledger_->ledger_client()->GetStringState(
-      state::kWalletBrave);
+  const std::string wallet_string =
+      ledger_->ledger_client()->GetEncryptedStringState(state::kWalletBrave);
 
   if (wallet_string.empty()) {
     return nullptr;
@@ -214,7 +214,7 @@ type::BraveWalletPtr Wallet::GetWallet() {
   return wallet;
 }
 
-void Wallet::SetWallet(type::BraveWalletPtr wallet) {
+bool Wallet::SetWallet(type::BraveWalletPtr wallet) {
   if (!wallet) {
     BLOG(0, "Brave wallet is null");
     return;
@@ -233,11 +233,15 @@ void Wallet::SetWallet(type::BraveWalletPtr wallet) {
 
   std::string json;
   base::JSONWriter::Write(new_wallet, &json);
-  ledger_->ledger_client()->SetStringState(state::kWalletBrave, json);
+  const bool success = ledger_->ledger_client()->SetEncryptedStringState(
+      state::kWalletBrave,
+      json);
   ledger_->database()->SaveEventLog(state::kRecoverySeed, event_string);
   if (!wallet->payment_id.empty()) {
     ledger_->database()->SaveEventLog(state::kPaymentId, wallet->payment_id);
   }
+
+  return success;
 }
 
 }  // namespace wallet

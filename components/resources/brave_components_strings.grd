@@ -466,6 +466,30 @@
       <message name="IDS_BRAVE_REWARDS_INTERNALS_WALLET_STATUS_DISCONNECTED_VERIFIED" desc="">Disconnected (Verified)</message>
       <message name="IDS_BRAVE_REWARDS_INTERNALS_WALLET_STATUS_PENDING" desc="">Pending</message>
 
+      <!-- WebUI brave tip dialog resources -->
+      <message name="IDS_BRAVE_REWARDS_TIP_BAP_FUNDS" desc="">BAP Funds</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_BAT_FUNDS" desc="">BAT Funds</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_CANCEL" desc="">Cancel</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_CANCEL_CONFIRMATION_TEXT" desc="">Are you sure you want to stop supporting this creator?</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_CANCEL_MONTHLY_CONTRIBUTION" desc="">Cancel Monthly Contribution</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_CHANGE_AMOUNT" desc="">Change Amount</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_CONFIRM_CANCEL" desc="">Confirm Canceling Monthly</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_CONTRIBUTION_AMOUNT" desc="">Contribution amount:</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_CONTRIBUTION_CANCELED" desc="">Your monthly contribution to this creator has been canceled.</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_CURRENTLY_SUPPORTING" desc="">You’re currently supporting this creator</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_CURRENT_MONTHLY_CONTRIBUTION" desc="">Current monthly contribution</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_ERROR_HAS_OCCURRED" desc="">Oops - an error has occurred.</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_MONTHLY_CONTRIBUTION_SET" desc="">Monthly contribution has been set.</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_NEXT_CONTRIBUTION_DATE" desc="">Next contribution date:</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_ONE_TIME_TIP" desc="">One Time Tip</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_ONE_TIME_TIP_AMOUNT" desc="">One time tip amount:</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_SORRY_TO_SEE_YOU_GO" desc="">Sorry to see you go…</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_SUPPORT_THIS_CREATOR" desc="">Support this creator</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_TERMS_OF_SERVICE" desc="">By proceeding, you agree to the <ph name="LINK_BEGIN">$1</ph>Terms of Service<ph name="LINK_END">$2</ph>.</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_THANKS_FOR_THE_SUPPORT" desc="">Thanks for the support!</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_TIP_HAS_BEEN_SET" desc="">Your one-time tip has been sent.</message>
+      <message name="IDS_BRAVE_REWARDS_TIP_TWEET_ABOUT_SUPPORT" desc="">Tweet about your support</message>
+
       <!-- WebUI brave ui resources -->
       <message name="IDS_BRAVE_UI_ABOUT" desc="">about</message>
       <message name="IDS_BRAVE_UI_ACCEPT" desc="">Accept</message>

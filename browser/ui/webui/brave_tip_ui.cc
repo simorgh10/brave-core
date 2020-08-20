@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/feature_list.h"
 #include "base/memory/weak_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brave/browser/brave_browser_process_impl.h"
@@ -21,7 +22,9 @@
 #include "brave/components/brave_rewards/browser/rewards_service.h"
 #include "brave/browser/brave_rewards/rewards_service_factory.h"
 #include "brave/components/brave_rewards/browser/rewards_service_observer.h"
+#include "brave/components/brave_rewards/common/features.h"
 #include "brave/components/brave_rewards/resources/grit/brave_rewards_resources.h"
+#include "brave/components/brave_rewards/resources/grit/brave_rewards_tip_dialog_generated_map.h"
 #include "brave/components/brave_rewards/resources/grit/brave_rewards_tip_generated_map.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/browser_finder.h"
@@ -38,6 +41,7 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "bat/ledger/mojom_structs.h"
 
+using brave_rewards::features::kBraveRewardsExperiments;
 using content::WebUIMessageHandler;
 
 namespace {
@@ -55,6 +59,7 @@ class RewardsTipDOMHandler : public WebUIMessageHandler,
   void RegisterMessages() override;
 
  private:
+  void IsRewardsInitialized(const base::ListValue* args);
   void GetPublisherTipData(const base::ListValue* args);
   void GetRewardsParameters(const base::ListValue* args);
   void OnTip(const base::ListValue* args);
@@ -81,6 +86,10 @@ class RewardsTipDOMHandler : public WebUIMessageHandler,
   void OnGetRewardsParameters(ledger::type::RewardsParametersPtr parameters);
 
   // RewardsServiceObserver implementation
+  void OnWalletInitialized(
+      brave_rewards::RewardsService* rewards_service,
+      const ledger::type::Result result) override;
+
   void OnRecurringTipSaved(brave_rewards::RewardsService* rewards_service,
                            bool success) override;
 
@@ -117,6 +126,12 @@ void RewardsTipDOMHandler::Init() {
 }
 
 void RewardsTipDOMHandler::RegisterMessages() {
+  web_ui()->RegisterMessageCallback(
+      "brave_rewards_tip.isRewardsInitialized",
+      base::BindRepeating(
+          &RewardsTipDOMHandler::IsRewardsInitialized,
+          base::Unretained(this)));
+
   web_ui()->RegisterMessageCallback(
       "brave_rewards_tip.getPublisherBanner",
       base::BindRepeating(&RewardsTipDOMHandler::GetPublisherTipData,
@@ -155,6 +170,17 @@ void RewardsTipDOMHandler::RegisterMessages() {
       base::BindRepeating(
           &RewardsTipDOMHandler::OnlyAnonWallet,
           base::Unretained(this)));
+}
+
+void RewardsTipDOMHandler::IsRewardsInitialized(const base::ListValue* args) {
+  if (!web_ui()->CanCallJavascript()) {
+    return;
+  }
+
+  if (rewards_service_ && rewards_service_->IsInitialized()) {
+    web_ui()->CallJavascriptFunctionUnsafe(
+        "brave_rewards_tip.rewardsInitialized");
+  }
 }
 
 void RewardsTipDOMHandler::GetPublisherTipData(
@@ -216,8 +242,17 @@ void RewardsTipDOMHandler::OnTip(const base::ListValue* args) {
   const double amount = args->GetList()[1].GetDouble();
   const bool recurring = args->GetList()[2].GetBool();
 
-  if (publisher_key.empty() || amount < 1) {
+  if (publisher_key.empty()) {
     // TODO(nejczdovc) add error
+    return;
+  }
+
+  if (recurring && amount <= 0) {
+    rewards_service_->RemoveRecurringTip(publisher_key);
+    return;
+  }
+
+  if (amount < 1) {
     return;
   }
 
@@ -243,6 +278,7 @@ void RewardsTipDOMHandler::OnGetRecurringTips(
   for (auto const& item : list) {
     auto publisher = std::make_unique<base::DictionaryValue>();
     publisher->SetString("publisherKey", item->id);
+    publisher->SetDouble("amount", item->weight);
     publisher->SetInteger("monthlyDate", item->reconcile_stamp);
     publishers->Append(std::move(publisher));
   }
@@ -295,11 +331,24 @@ BraveTipUI::BraveTipUI(content::WebUI* web_ui, const std::string& name)
   if (!brave::IsRegularProfile(profile)) {
     return;
   }
-  content::WebUIDataSource* data_source = CreateBasicUIHTMLSource(profile,
-                                              name,
-                                              kBraveRewardsTipGenerated,
-                                              kBraveRewardsTipGeneratedSize,
-                                              IDR_BRAVE_REWARDS_TIP_HTML);
+
+  const GritResourceMap* resource_map = kBraveRewardsTipGenerated;
+  size_t map_size = kBraveRewardsTipGeneratedSize;
+  int html_resource = IDR_BRAVE_REWARDS_TIP_HTML;
+
+  if (base::FeatureList::IsEnabled(kBraveRewardsExperiments)) {
+    resource_map = kBraveRewardsTipDialogGenerated;
+    map_size = kBraveRewardsTipDialogGeneratedSize;
+    html_resource = IDR_BRAVE_REWARDS_TIP_DIALOG_HTML;
+  }
+
+  content::WebUIDataSource* data_source = CreateBasicUIHTMLSource(
+      profile,
+      name,
+      resource_map,
+      map_size,
+      html_resource);
+
   content::WebUIDataSource::Add(profile, data_source);
 
   auto handler_owner = std::make_unique<RewardsTipDOMHandler>();
@@ -327,6 +376,17 @@ void RewardsTipDOMHandler::OnReconcileStamp(uint64_t reconcile_stamp) {
   const std::string stamp = std::to_string(reconcile_stamp);
   web_ui()->CallJavascriptFunctionUnsafe("brave_rewards_tip.reconcileStamp",
       base::Value(stamp));
+}
+
+void RewardsTipDOMHandler::OnWalletInitialized(
+    brave_rewards::RewardsService* rewards_service,
+    const ledger::type::Result result) {
+  if (!web_ui()->CanCallJavascript()) {
+    return;
+  }
+
+  web_ui()->CallJavascriptFunctionUnsafe(
+      "brave_rewards_tip.rewardsInitialized");
 }
 
 void RewardsTipDOMHandler::OnRecurringTipRemoved(

@@ -67,6 +67,9 @@
   "<(ROOT_GEN_DIR)/brave/web-ui-brave_rewards_tip/brave_rewards_tip.grd": {
     "includes": [38800],
   },
+  "<(ROOT_GEN_DIR)/brave/web-ui-brave_rewards_tip_dialog/brave_rewards_tip_dialog.grd": {
+    "includes": [38900],
+  },
   "brave/components/resources/brave_components_strings.grd": {
     "messages": [39000]
   },

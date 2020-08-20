@@ -11,8 +11,6 @@ require('emptykit.css')
 
 // Components
 import App from './components/app'
-require('../../../../ui/webui/resources/fonts/muli.css')
-require('../../../../ui/webui/resources/fonts/poppins.css')
 
 // Utils
 import store from './store'
@@ -64,6 +62,10 @@ window.cr.define('brave_rewards_tip', function () {
     return actions
   }
 
+  function rewardsInitialized () {
+    // No-op
+  }
+
   function publisherBanner (data: RewardsTip.Publisher) {
     getActions().onPublisherBanner(data)
   }
@@ -108,6 +110,7 @@ window.cr.define('brave_rewards_tip', function () {
 
   return {
     initialize,
+    rewardsInitialized,
     publisherBanner,
     rewardsParameters,
     recurringTips,

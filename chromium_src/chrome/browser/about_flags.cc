@@ -9,6 +9,7 @@
 #include "brave/common/brave_features.h"
 #include "brave/common/pref_names.h"
 #include "brave/components/brave_component_updater/browser/features.h"
+#include "brave/components/brave_rewards/common/features.h"
 #include "brave/components/brave_shields/common/features.h"
 #include "brave/components/brave_sync/buildflags/buildflags.h"
 #include "brave/components/ipfs/browser/buildflags/buildflags.h"
@@ -18,6 +19,7 @@
 #include "chrome/browser/profiles/profile_manager.h"
 #include "components/prefs/pref_service.h"
 
+using brave_rewards::features::kBraveRewardsExperiments;
 using brave_shields::features::kBraveAdblockCosmeticFiltering;
 using ntp_background_images::features::kBraveNTPBrandedWallpaper;
 using ntp_background_images::features::kBraveNTPBrandedWallpaperDemo;
@@ -84,7 +86,11 @@ using ntp_background_images::features::kBraveNTPSuperReferralWallpaper;
      flag_descriptions::kBraveSuperReferralName,                           \
      flag_descriptions::kBraveSuperReferralDescription,                    \
      flags_ui::kOsMac | flags_ui::kOsWin | flags_ui::kOsAndroid,           \
-     FEATURE_VALUE_TYPE(kBraveNTPSuperReferralWallpaper)},
+     FEATURE_VALUE_TYPE(kBraveNTPSuperReferralWallpaper)},                 \
+    {"brave-rewards-experiments",                                          \
+     flag_descriptions::kBraveRewardsExperimentsName,                      \
+     flag_descriptions::kBraveRewardsExperimentsDescription, kOsAll,       \
+     FEATURE_VALUE_TYPE(kBraveRewardsExperiments)},
 
 #define SetFeatureEntryEnabled SetFeatureEntryEnabled_ChromiumImpl
 #include "../../../../chrome/browser/about_flags.cc"  // NOLINT

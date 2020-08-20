@@ -37,4 +37,8 @@ const char kBraveIpfsDescription[] =
 const char kBraveSuperReferralName[] = "Enable Brave Super Referral";
 const char kBraveSuperReferralDescription[] =
     "Use custom theme for Brave Super Referral";
+const char kBraveRewardsExperimentsName[] =
+    "Enable Brave Rewards experimental features";
+const char kBraveRewardsExperimentsDescription[] =
+    "Enable upcoming and experimental Brave Rewards features";
 }  // namespace flag_descriptions

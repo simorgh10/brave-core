@@ -9,7 +9,7 @@
 #include <utility>
 
 #include "base/task/post_task.h"
-#include "brave/common/url_constants.h"
+#include "brave/common/brave_url_constants.h"
 #include "brave/common/pref_names.h"
 #include "brave/components/ipfs/browser/translate_ipfs_uri.h"
 #include "brave/components/ipfs/common/ipfs_constants.h"

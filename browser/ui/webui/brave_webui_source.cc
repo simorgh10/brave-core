@@ -10,7 +10,7 @@
 
 #include "brave/components/ipfs/browser/buildflags/buildflags.h"
 #include "base/strings/utf_string_conversions.h"
-#include "brave/common/url_constants.h"
+#include "brave/common/brave_url_constants.h"
 #include "components/grit/brave_components_resources.h"
 #include "components/grit/brave_components_strings.h"
 #include "components/grit/components_resources.h"
@@ -112,14 +112,14 @@ void CustomizeWebUIHTMLSource(const std::string &name,
   // uphold wallet connection
   base::string16 rewards_not_supported_region = l10n_util::GetStringFUTF16(
       IDS_BRAVE_REWARDS_LOCAL_REDIRECT_MODAL_NOT_ALLOWED,
-      base::ASCIIToUTF16(kRewardsUpholdSupport));
+      base::ASCIIToUTF16(brave::kRewardsUpholdSupport));
   source->AddString("redirectModalNotAllowed", rewards_not_supported_region);
 
   // Strings which have token replacement in them
   base::string16 brave_welcome_page_privacy_desc = l10n_util::GetStringFUTF16(
       IDS_BRAVE_WELCOME_PAGE_PRIVACY_DESC,
-      base::ASCIIToUTF16(kP3ALearnMoreURL),
-      base::ASCIIToUTF16(kP3ASettingsLink));
+      base::ASCIIToUTF16(brave::kP3ALearnMoreURL),
+      base::ASCIIToUTF16(brave::kP3ASettingsLink));
   source->AddString("privacyDesc",
                          brave_welcome_page_privacy_desc);
 

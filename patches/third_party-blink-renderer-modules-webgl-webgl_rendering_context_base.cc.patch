@@ -23,7 +23,7 @@ index ed7ae523c40203425f6b08cd6308e1debac24d18..944961b5043cdd4aa77618f5308d5cae
    if (!ValidateWebGLProgramOrShader("getAttachedShaders", program))
      return base::nullopt;
 +  BRAVE_WEBGL_RENDERING_CONTEXT_BASE_NULLOPT
- 
+
    HeapVector<Member<WebGLShader>> shader_objects;
    const GLenum kShaderType[] = {GL_VERTEX_SHADER, GL_FRAGMENT_SHADER,
 @@ -2996,6 +2999,7 @@ GLint WebGLRenderingContextBase::getAttribLocation(WebGLProgram* program,
@@ -39,7 +39,7 @@ index ed7ae523c40203425f6b08cd6308e1debac24d18..944961b5043cdd4aa77618f5308d5cae
    if (isContextLost() || !ValidateBufferTarget("getBufferParameter", target))
      return ScriptValue::CreateNull(script_state->GetIsolate());
 +  BRAVE_WEBGL_RENDERING_CONTEXT_BASE_SCRIPT_VALUE
- 
+
    switch (pname) {
      case GL_BUFFER_USAGE: {
 @@ -3054,6 +3059,7 @@ WebGLContextAttributes* WebGLRenderingContextBase::getContextAttributes()
@@ -47,13 +47,13 @@ index ed7ae523c40203425f6b08cd6308e1debac24d18..944961b5043cdd4aa77618f5308d5cae
    if (isContextLost())
      return nullptr;
 +  BRAVE_WEBGL_RENDERING_CONTEXT_BASE_NULLPTR
- 
+
    WebGLContextAttributes* result =
        ToWebGLContextAttributes(CreationAttributes());
 @@ -3165,6 +3171,7 @@ ScriptValue WebGLRenderingContextBase::getFramebufferAttachmentParameter(
                                           target, attachment))
      return ScriptValue::CreateNull(script_state->GetIsolate());
- 
+
 +  BRAVE_WEBGL_RENDERING_CONTEXT_BASE_SCRIPT_VALUE
    if (!framebuffer_binding_ || !framebuffer_binding_->Object()) {
      SynthesizeGLError(GL_INVALID_OPERATION, "getFramebufferAttachmentParameter",
@@ -129,16 +129,16 @@ index ed7ae523c40203425f6b08cd6308e1debac24d18..944961b5043cdd4aa77618f5308d5cae
 +  BRAVE_WEBGL_RENDERING_CONTEXT_BASE_STRING
    return EnsureNotNull(shader->Source());
  }
- 
-@@ -3737,6 +3753,7 @@ base::Optional<Vector<String>>
+
+@@ -3811,6 +3827,7 @@ base::Optional<Vector<String>>
  WebGLRenderingContextBase::getSupportedExtensions() {
    if (isContextLost())
      return base::nullopt;
 +  BRAVE_WEBGL_RENDERING_CONTEXT_BASE_NULLOPT
- 
+
    Vector<String> result;
- 
-@@ -3759,6 +3776,7 @@ ScriptValue WebGLRenderingContextBase::getTexParameter(
+
+@@ -3833,6 +3850,7 @@ ScriptValue WebGLRenderingContextBase::getTexParameter(
      GLenum pname) {
    if (isContextLost())
      return ScriptValue::CreateNull(script_state->GetIsolate());

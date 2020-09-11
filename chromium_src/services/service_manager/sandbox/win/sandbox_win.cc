@@ -3,15 +3,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "base/command_line.h"
 #include "base/process/launch.h"
+#include "services/service_manager/sandbox/switches.h"
 
 namespace {
-void BraveLaunchOption(base::CommandLine* cmd_line,
+void BraveLaunchOption(const std::string& process_type,
                        base::LaunchOptions *options) {
-  // tor::swtiches::kTorExecutablePath
-  if (cmd_line->HasSwitch("tor-executable-path"))
+ if (process_type == service_manager::switches::kUtilityProcess)
     options->start_hidden = true;
+
 }
 
 }  // namespace

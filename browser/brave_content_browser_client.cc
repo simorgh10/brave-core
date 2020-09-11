@@ -90,7 +90,6 @@ using extensions::ChromeContentBrowserClientExtensionsPart;
 #if BUILDFLAG(ENABLE_TOR)
 #include "brave/browser/tor/tor_navigation_throttle.h"
 #include "brave/browser/tor/tor_profile_service_factory.h"
-#include "brave/common/tor/switches.h"
 #include "brave/components/services/tor/public/cpp/manifest.h"
 #include "brave/components/services/tor/public/interfaces/tor.mojom.h"
 #include "brave/components/services/tor/tor_launcher_service.h"
@@ -273,20 +272,6 @@ void BraveContentBrowserClient::AppendExtraCommandLineSwitches(
     }
     command_line->AppendSwitchASCII("brave_session_token",
                                     base::NumberToString(session_token));
-  }
-
-  if (process_type == switches::kUtilityProcess) {
-#if BUILDFLAG(ENABLE_TOR)
-      // This is not ideal because it adds the tor executable as a switch
-      // for every utility process, but it should be ok until we land a
-      // permanent fix
-      base::FilePath path =
-          g_brave_browser_process->tor_client_updater()->GetExecutablePath();
-      if (!path.empty()) {
-        command_line->AppendSwitchPath(tor::switches::kTorExecutablePath,
-                                       path.BaseName());
-      }
-#endif
   }
 }
 

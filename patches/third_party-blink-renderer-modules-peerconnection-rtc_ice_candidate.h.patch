@@ -1,0 +1,13 @@
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_ice_candidate.h b/third_party/blink/renderer/modules/peerconnection/rtc_ice_candidate.h
+index 395fc9b5c3914d332af34c0b9103a173ea317bbd..c4e60a52b9c3909a05aee482e26486c19ffb3667 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_ice_candidate.h
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_ice_candidate.h
+@@ -65,7 +65,7 @@ class MODULES_EXPORT RTCIceCandidate final : public ScriptWrappable {
+   String protocol() const;
+   base::Optional<uint16_t> port() const;
+   String type() const;
+-  base::Optional<String> tcpType() const;
++  String tcpType() const;
+   String relatedAddress() const;
+   base::Optional<uint16_t> relatedPort() const;
+   String usernameFragment() const;

@@ -1,0 +1,15 @@
+diff --git a/third_party/blink/renderer/platform/peerconnection/rtc_ice_candidate_platform.cc b/third_party/blink/renderer/platform/peerconnection/rtc_ice_candidate_platform.cc
+index 1dc2d459aa1f1800ec4560e2340b4e108f691f3d..e9cbb3e94c5e2d1f075fc5c7f875f5724f588280 100644
+--- a/third_party/blink/renderer/platform/peerconnection/rtc_ice_candidate_platform.cc
++++ b/third_party/blink/renderer/platform/peerconnection/rtc_ice_candidate_platform.cc
+@@ -76,9 +76,7 @@ void RTCIceCandidatePlatform::PopulateFields(bool use_username_from_candidate) {
+     port_ = c.address().port();
+   }
+   type_ = CandidateTypeToString(c.type());
+-  if (!c.tcptype().empty()) {
+-    tcp_type_ = String::FromUTF8(c.tcptype().data());
+-  }
++  tcp_type_ = String::FromUTF8(c.tcptype().data());
+   if (!c.related_address().IsNil()) {
+     related_address_ =
+         String::FromUTF8(c.related_address().HostAsURIString().data());

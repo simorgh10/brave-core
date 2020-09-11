@@ -1,0 +1,22 @@
+diff --git a/third_party/blink/renderer/platform/peerconnection/rtc_ice_candidate_platform.h b/third_party/blink/renderer/platform/peerconnection/rtc_ice_candidate_platform.h
+index 810e999165bfeb7f7ba9429dabf1245da0009f27..7c021d743223f2357ede6468c3a2dd4d6993c62c 100644
+--- a/third_party/blink/renderer/platform/peerconnection/rtc_ice_candidate_platform.h
++++ b/third_party/blink/renderer/platform/peerconnection/rtc_ice_candidate_platform.h
+@@ -68,7 +68,7 @@ class PLATFORM_EXPORT RTCIceCandidatePlatform final
+   const String Protocol() const { return protocol_; }
+   const base::Optional<uint16_t>& Port() const { return port_; }
+   const String& Type() const { return type_; }
+-  const base::Optional<String>& TcpType() const { return tcp_type_; }
++  const String& TcpType() const { return tcp_type_; }
+   const String& RelatedAddress() const { return related_address_; }
+   const base::Optional<uint16_t>& RelatedPort() const { return related_port_; }
+   const String& UsernameFragment() const { return username_fragment_; }
+@@ -88,7 +88,7 @@ class PLATFORM_EXPORT RTCIceCandidatePlatform final
+   String protocol_;
+   base::Optional<uint16_t> port_;
+   String type_;
+-  base::Optional<String> tcp_type_;
++  String tcp_type_;
+   String related_address_;
+   base::Optional<uint16_t> related_port_;
+   String username_fragment_;

@@ -1,0 +1,13 @@
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_ice_candidate.cc b/third_party/blink/renderer/modules/peerconnection/rtc_ice_candidate.cc
+index f16e6fc62655e342a4c7d9631fe102d9d7496892..48c9a2f0fddaf6067a4c052e0881c5faecda6580 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_ice_candidate.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_ice_candidate.cc
+@@ -127,7 +127,7 @@ String RTCIceCandidate::type() const {
+   return platform_candidate_->Type();
+ }
+ 
+-base::Optional<String> RTCIceCandidate::tcpType() const {
++String RTCIceCandidate::tcpType() const {
+   return platform_candidate_->TcpType();
+ }
+ 

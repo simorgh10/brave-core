@@ -17,7 +17,8 @@ std::auto_ptr<syncer::DeviceInfo> CreateStubDeviceInfoByGuid(
       guid, "", "", "", sync_pb::SyncEnums_DeviceType_TYPE_CROS, "",
       hardware_info.manufacturer, hardware_info.model, base::Time(),
       base::TimeDelta(), false,
-      base::Optional<syncer::DeviceInfo::SharingInfo>(), ""));
+      base::Optional<syncer::DeviceInfo::SharingInfo>(), "",
+      /*interested_data_types=*/syncer::ModelTypeSet()));
   return device_info;
 }
 

@@ -104,9 +104,7 @@ void JNI_BraveAdsNativeHelper_AdClicked(
     const base::android::JavaParamRef<jobject>& j_profile_android,
     const base::android::JavaParamRef<jstring>& j_notification_id) {
   Profile* profile = ProfileAndroid::FromProfileAndroid(j_profile_android);
-  brave_ads::AdsServiceImpl* ads_service =
-    static_cast<brave_ads::AdsServiceImpl*>(
-      brave_ads::AdsServiceFactory::GetForProfile(profile));
+  brave_ads::AdsServiceImpl* ads_service = brave_ads::AdsServiceFactory::GetImplForProfile(profile);
   if (!ads_service) {
     NOTREACHED();
     return;
@@ -131,8 +129,7 @@ void JNI_BraveAdsNativeHelper_AdDismissed(
     const base::android::JavaParamRef<jstring>& j_notification_id) {
   Profile* profile = ProfileAndroid::FromProfileAndroid(j_profile_android);
   brave_ads::AdsServiceImpl* ads_service =
-    static_cast<brave_ads::AdsServiceImpl*>(
-        brave_ads::AdsServiceFactory::GetForProfile(profile));
+        brave_ads::AdsServiceFactory::GetImplForProfile(profile);
   if (!ads_service) {
     NOTREACHED();
     return;

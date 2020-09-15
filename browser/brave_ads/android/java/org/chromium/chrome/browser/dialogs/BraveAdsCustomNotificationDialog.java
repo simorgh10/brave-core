@@ -50,8 +50,12 @@ public class BraveAdsCustomNotificationDialog {
 
     public static void displayAdsCustomNotification(Activity activity, final String notificationId,
             final String origin, final String title, final String body) {
-        if (mAdsDialog != null) {
-            mAdsDialog.dismiss();
+        try {
+            if (mAdsDialog != null) {
+                mAdsDialog.dismiss();
+            }
+        } catch (IllegalArgumentException e) {
+          mAdsDialog = null;
         }
         AlertDialog.Builder b = new AlertDialog.Builder(activity);
 
@@ -94,7 +98,6 @@ public class BraveAdsCustomNotificationDialog {
             @Override
             public void onClick(View view) {
                 // We don't take the user to the page in this class, native code handles opening a new tab for us.
-                mAdsDialog.dismiss();
                 if (mNotificationId.equals(BraveOnboardingNotification.BRAVE_ONBOARDING_NOTIFICATION_TAG)) {
                     ChromeTabbedActivity chromeTabbedActivity = BraveActivity.getChromeTabbedActivity();
                     if (chromeTabbedActivity != null) {
@@ -102,6 +105,7 @@ public class BraveAdsCustomNotificationDialog {
                     }
                     mAdsDialog.dismiss();
                 } else {
+                    mAdsDialog.dismiss();
                     BraveAdsNativeHelper.nativeAdClicked(Profile.getLastUsedRegularProfile(), mNotificationId);
                 }
             }
@@ -123,8 +127,13 @@ public class BraveAdsCustomNotificationDialog {
 
     @CalledByNative
     private static void closeAdsCustomNotification(final String notificationId) {
-        if (mNotificationId != null && mNotificationId.equals(notificationId) && mAdsDialog != null) {
-            mAdsDialog.dismiss();
+        try {
+            if (mNotificationId != null && mNotificationId.equals(notificationId) && mAdsDialog != null) {
+                mAdsDialog.dismiss();
+            }
+        } catch (IllegalArgumentException e) {
+            mAdsDialog = null;
         }
+
     }
 }

@@ -5,13 +5,12 @@
 
 #include "brave/browser/brave_ads/android/brave_ads_native_helper.h"
 
+#include <memory>
+#include <string>
+
 #include "base/android/jni_android.h"
 #include "base/android/jni_string.h"
 #include "brave/browser/brave_ads/android/jni_headers/BraveAdsNativeHelper_jni.h"
-// #include "brave/components/brave_ads/browser/ads_notification_handler.h"
-// #include "brave/components/brave_ads/browser/ads_service.h"
-// #include "brave/components/brave_ads/browser/ads_service_factory.h"
-// #include "brave/components/brave_ads/browser/ads_service_impl.h"
 #include "brave/components/l10n/browser/locale_helper_android.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_android.h"
@@ -104,7 +103,8 @@ void JNI_BraveAdsNativeHelper_AdClicked(
     const base::android::JavaParamRef<jobject>& j_profile_android,
     const base::android::JavaParamRef<jstring>& j_notification_id) {
   Profile* profile = ProfileAndroid::FromProfileAndroid(j_profile_android);
-  brave_ads::AdsServiceImpl* ads_service = brave_ads::AdsServiceFactory::GetImplForProfile(profile);
+  brave_ads::AdsServiceImpl* ads_service = brave_ads::
+    AdsServiceFactory::GetImplForProfile(profile);
   if (!ads_service) {
     NOTREACHED();
     return;

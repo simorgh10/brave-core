@@ -7,6 +7,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+OBJC_EXPORT
 @interface BATExternalWallet (DictionaryValue)
 
 - (instancetype)initWithDictionaryValue:(NSDictionary *)dictionary;

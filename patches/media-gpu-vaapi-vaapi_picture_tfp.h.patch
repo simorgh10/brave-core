@@ -1,0 +1,20 @@
+diff --git a/media/gpu/vaapi/vaapi_picture_tfp.h b/media/gpu/vaapi/vaapi_picture_tfp.h
+index c4eb2c1b527e03fa9d374110a56bda07ec8a9b4b..a32955ea21c5f9fb8be1919bb743a906970aada7 100644
+--- a/media/gpu/vaapi/vaapi_picture_tfp.h
++++ b/media/gpu/vaapi/vaapi_picture_tfp.h
+@@ -11,6 +11,7 @@
+ #include "base/memory/ref_counted.h"
+ #include "media/gpu/vaapi/vaapi_picture.h"
+ #include "ui/gfx/geometry/size.h"
++#include "ui/gfx/x/connection.h"
+ #include "ui/gl/gl_bindings.h"
+ 
+ namespace gl {
+@@ -47,6 +48,7 @@ class VaapiTFPPicture : public VaapiPicture {
+  private:
+   Status Initialize();
+ 
++  x11::Connection* const connection_;
+   Display* x_display_;
+ 
+   Pixmap x_pixmap_;

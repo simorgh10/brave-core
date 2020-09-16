@@ -20,6 +20,7 @@
 #include "ui/gfx/paint_vector_icon.h"
 #include "ui/strings/grit/ui_strings.h"
 #include "ui/views/background.h"
+#include "ui/views/controls/image_view.h"
 #include "ui/views/controls/button/image_button.h"
 #include "ui/views/layout/box_layout.h"
 
@@ -47,14 +48,13 @@ NotificationControlButtonsView::~NotificationControlButtonsView() = default;
 void NotificationControlButtonsView::ShowInfoButton(bool show) {
   if (show && !info_button_) {
     // Add the button next right to the snooze button.
-    info_button_ = std::make_unique<PaddedButton>(this);
+    // (Albert Wang) We change to an PaddedButton once we have a link
+    info_button_ = std::make_unique<views::ImageView>();
     info_button_->set_owned_by_client();
     gfx::Image ad_logo =
       ui::ResourceBundle::GetSharedInstance().GetImageNamed(
           IDR_BAT_ADS_LOGO_20);
-    info_button_->SetImage(
-        views::Button::STATE_NORMAL,
-        ad_logo.AsImageSkia());
+    info_button_->SetImage(ad_logo.AsImageSkia());
     AddChildView(info_button_.get());
     Layout();
   } else if (!show && info_button_) {
@@ -100,7 +100,7 @@ views::Button* NotificationControlButtonsView::close_button() const {
   return close_button_.get();
 }
 
-views::Button* NotificationControlButtonsView::info_button() const {
+views::ImageView* NotificationControlButtonsView::info_button() const {
   return info_button_.get();
 }
 

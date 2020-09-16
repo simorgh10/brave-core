@@ -398,8 +398,7 @@ void AdNotificationViewMD::UpdateWithNotification(
 
 void AdNotificationViewMD::UpdateControlButtonsVisibilityWithNotification(
     const Notification& notification) {
-  // (Albert Wang): Don't show info button until we get more details
-  // control_buttons_view_->ShowInfoButton(true);
+  control_buttons_view_->ShowInfoButton(true);
   control_buttons_view_->ShowCloseButton(true);
   UpdateControlButtonsVisibility();
 }

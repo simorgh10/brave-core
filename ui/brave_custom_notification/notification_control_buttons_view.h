@@ -12,6 +12,7 @@
 #include "third_party/skia/include/core/SkColor.h"
 #include "ui/views/controls/button/button.h"
 #include "ui/views/controls/button/image_button.h"
+#include "ui/views/controls/image_view.h"
 #include "ui/views/view.h"
 
 namespace ui {
@@ -50,7 +51,7 @@ class NotificationControlButtonsView
 
   // Methods for retrieving the control buttons directly.
   views::Button* close_button() const;
-  views::Button* info_button() const;
+  views::ImageView* info_button() const;
 
   // views::View
   const char* GetClassName() const override;
@@ -62,7 +63,7 @@ class NotificationControlButtonsView
   NotificationView* message_view_;
 
   std::unique_ptr<PaddedButton> close_button_;
-  std::unique_ptr<PaddedButton> info_button_;
+  std::unique_ptr<views::ImageView> info_button_;
 
   DISALLOW_COPY_AND_ASSIGN(NotificationControlButtonsView);
 };

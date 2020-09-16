@@ -2733,7 +2733,6 @@ void RewardsServiceImpl::OnInlineTipSetting(
 }
 
 void RewardsServiceImpl::GetShareURL(
-      const std::string& type,
       const std::map<std::string, std::string>& args,
       GetShareURLCallback callback) {
   if (!Connected()) {
@@ -2741,7 +2740,6 @@ void RewardsServiceImpl::GetShareURL(
   }
 
   bat_ledger_->GetShareURL(
-      type,
       base::MapToFlatMap(args),
       base::BindOnce(&RewardsServiceImpl::OnShareURL,
           AsWeakPtr(),

@@ -238,6 +238,8 @@ source_set("ads") {
     "src/bat/ads/internal/frequency_capping/exclusion_rules/conversion_frequency_cap.h",
     "src/bat/ads/internal/frequency_capping/exclusion_rules/daily_cap_frequency_cap.cc",
     "src/bat/ads/internal/frequency_capping/exclusion_rules/daily_cap_frequency_cap.h",
+    "src/bat/ads/internal/frequency_capping/exclusion_rules/day_parting_frequency_cap.cc",
+    "src/bat/ads/internal/frequency_capping/exclusion_rules/day_parting_frequency_cap.h",
     "src/bat/ads/internal/frequency_capping/exclusion_rules/dismissed_frequency_cap.cc",
     "src/bat/ads/internal/frequency_capping/exclusion_rules/dismissed_frequency_cap.h",
     "src/bat/ads/internal/frequency_capping/exclusion_rules/exclusion_rule.h",

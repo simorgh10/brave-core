@@ -53,7 +53,7 @@ bool ContentBrowserClientHelper::HandleIPFSURLReverseRewrite(GURL* url,
 
 // static
 void ContentBrowserClientHelper::LoadOrLaunchIPFSURL(
-    const GURL& url,
+    GURL url,
     content::WebContents::OnceGetter web_contents_getter,
     ui::PageTransition page_transition,
     bool has_user_gesture,
@@ -62,8 +62,10 @@ void ContentBrowserClientHelper::LoadOrLaunchIPFSURL(
   if (!web_contents)
     return;
 
+  bool isIPFSScheme = url.SchemeIs(kIPFSScheme) || url.SchemeIs(kIPNSScheme);
   auto* browser_context = web_contents->GetBrowserContext();
-  if (!IsIPFSDisabled(browser_context)) {
+  if (!IsIPFSDisabled(browser_context) && (!isIPFSScheme ||
+      TranslateIPFSURI(url, &url, IsIPFSLocalGateway(browser_context)))) {
     web_contents->GetController().LoadURL(url, content::Referrer(),
         page_transition, std::string());
   } else {
@@ -78,8 +80,11 @@ void ContentBrowserClientHelper::LoadOrLaunchIPFSURL(
 bool ContentBrowserClientHelper::HandleIPFSURLRewrite(GURL* url,
     content::BrowserContext* browser_context) {
   if (!IsIPFSDisabled(browser_context) &&
+      // When it's not the local gateway we don't want to show a ipfs:// URL.
+      // We instead will translate the URL later in LoadOrLaunchIPFSURL.
+      IsIPFSLocalGateway(browser_context) &&
       (url->SchemeIs(kIPFSScheme) || url->SchemeIs(kIPNSScheme))) {
-    return TranslateIPFSURI(*url, url, IsIPFSLocalGateway(browser_context));
+    return TranslateIPFSURI(*url, url, true);
   }
 
   return false;

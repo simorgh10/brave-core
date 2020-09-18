@@ -71,7 +71,9 @@ export default class ModalVerify extends React.PureComponent<Props, {}> {
 
   getFooter = () => (
     <StyledFooter>
-      <span dangerouslySetInnerHTML={{ __html: getLocale('walletVerificationFooter') }} />
+      <span>
+        {getLocale('walletVerificationFooter')}
+      </span>
       <StyledFooterIcon>
         <UpholdColorIcon />
       </StyledFooterIcon>

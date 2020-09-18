@@ -108,7 +108,9 @@ export const defaultState: NewTab.State = {
   cryptoDotComState: {
     optInTotal: false,
     optInBTCPrice: false,
-    tickerPrices: {}
+    tickerPrices: {},
+    losersGainers: {},
+    charts: []
   }
 }
 

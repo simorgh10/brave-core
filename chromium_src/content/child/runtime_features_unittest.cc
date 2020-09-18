@@ -9,54 +9,26 @@
 #include "base/test/scoped_feature_list.h"
 #include "content/public/common/content_features.h"
 #include "testing/gtest/include/gtest/gtest.h"
+#include "third_party/blink/public/common/features.h"
 #include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
 
 class RuntimeEnabledFeaturesTest : public testing::Test {
  public:
-  RuntimeEnabledFeaturesTest() : testing::Test() {
-    // Enable features on start via Chromium features.
-    EnableChromiumFeatures();
-  }
-
-  void EnableChromiumFeatures() {
-    feature_list_.InitWithFeatures(
-        { // features::kLangClientHintHeader,
-         features::kSubresourceWebBundles,
-         features::kSignedExchangePrefetchCacheForNavigations,
-         features::kSignedExchangeSubresourcePrefetch},
-        {});
-  }
-
-  void CheckChromiumFeaturesEnabled() {
-    // Confirm that features are enabled.
-    //EXPECT_TRUE(base::FeatureList::IsEnabled(features::kLangClientHintHeader));
-    EXPECT_TRUE(base::FeatureList::IsEnabled(features::kSubresourceWebBundles));
-    EXPECT_TRUE(base::FeatureList::IsEnabled(
-        features::kSignedExchangeSubresourcePrefetch));
-    EXPECT_TRUE(base::FeatureList::IsEnabled(
-        features::kSignedExchangePrefetchCacheForNavigations));
-  }
+  RuntimeEnabledFeaturesTest() : testing::Test() {}
 
   void CheckAllDisabled() {
-    using blink::RuntimeEnabledFeatures;
-    // LangClientHintHeader
-    EXPECT_FALSE(RuntimeEnabledFeatures::LangClientHintHeaderEnabled(nullptr));
-    // SubresourceWebBundles
-    EXPECT_FALSE(RuntimeEnabledFeatures::SubresourceWebBundlesEnabled(nullptr));
-    // SignedExchangePrefetchCacheForNavigations
-    EXPECT_FALSE(RuntimeEnabledFeatures::
-                     SignedExchangePrefetchCacheForNavigationsEnabled(nullptr));
-    // SignedExchangeSubresourcePrefetch
+    using rtf = blink::RuntimeEnabledFeatures;
+    EXPECT_FALSE(rtf::DigitalGoodsEnabled(nullptr));
+    // [Available in Cr87] EXPECT_FALSE(rtf::DirectSocketsEnabled(nullptr));
+    EXPECT_FALSE(rtf::LangClientHintHeaderEnabled(nullptr));
+    EXPECT_FALSE(rtf::NativeFileSystemEnabled(nullptr));
+    EXPECT_FALSE(rtf::SubresourceWebBundlesEnabled(nullptr));
     EXPECT_FALSE(
-        RuntimeEnabledFeatures::SignedExchangeSubresourcePrefetchEnabled(
-            nullptr));
+        rtf::SignedExchangePrefetchCacheForNavigationsEnabled(nullptr));
+    EXPECT_FALSE(rtf::SignedExchangeSubresourcePrefetchEnabled(nullptr));
   }
-
- private:
-  base::test::ScopedFeatureList feature_list_;
 };
 
 TEST_F(RuntimeEnabledFeaturesTest, TestBlinkRuntimeFeaturesDisabled) {
-  CheckChromiumFeaturesEnabled();
   CheckAllDisabled();
 }

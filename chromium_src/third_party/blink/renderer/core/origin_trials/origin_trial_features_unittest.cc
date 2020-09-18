@@ -4,7 +4,8 @@
 
 #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
 
-#include <vector>
+#include <array>
+#include <string>
 
 #include "base/test/scoped_feature_list.h"
 #include "base/test/task_environment.h"
@@ -19,9 +20,33 @@
 #include "third_party/blink/renderer/core/testing/dummy_page_holder.h"
 #include "third_party/blink/renderer/platform/geometry/int_size.h"
 #include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
+#include "third_party/blink/renderer/platform/wtf/vector.h"
 
 namespace blink {
 namespace {
+
+typedef bool (*fn_feature_enabled_checker)(const FeatureContext*);
+struct BraveDisabledTrial {
+  const char* trial_name;
+  OriginTrialFeature trial_feature;
+  fn_feature_enabled_checker feature_enabled_checker;
+};
+
+// This list should be in sync with the ones in origin_trials.cc and
+// origin_trial_context.cc overrides.
+const std::array<BraveDisabledTrial, 3> kBraveDisabledTrials = {{
+    // [Not released yet]
+    //    {"DigitalGoods", OriginTrialFeature::kDigitalGoods,
+    //     &RuntimeEnabledFeatures::DigitalGoodsEnabled},
+    {"NativeFileSystem2", OriginTrialFeature::kNativeFileSystem,
+     &RuntimeEnabledFeatures::NativeFileSystemEnabled},
+    {"SignedExchangeSubresourcePrefetch",
+     OriginTrialFeature::kSignedExchangeSubresourcePrefetch,
+     &RuntimeEnabledFeatures::SignedExchangeSubresourcePrefetchEnabled},
+    {"SubresourceWebBundles", OriginTrialFeature::kSubresourceWebBundles,
+     &RuntimeEnabledFeatures::SubresourceWebBundlesEnabled},
+}};
 
 class OriginTrialFeaturesTest : public testing::Test {
  public:
@@ -39,58 +64,57 @@ class OriginTrialFeaturesTest : public testing::Test {
     return page_holder_->GetDocument().GetExecutionContext();
   }
 
-  void CheckAllDisabled() {
-    // SubresourceWebBundles
-    EXPECT_FALSE(RuntimeEnabledFeatures::SubresourceWebBundlesEnabled(
-        GetExecutionContext()));
-    // SignedExchangeSubresourcePrefetch
-    EXPECT_FALSE(
-        RuntimeEnabledFeatures::SignedExchangeSubresourcePrefetchEnabled(
-            GetExecutionContext()));
-  }
-
  private:
   base::test::SingleThreadTaskEnvironment task_environment_;
   std::unique_ptr<DummyPageHolder> page_holder_ = nullptr;
   scoped_refptr<base::TestMockTimeTaskRunner> test_task_runner_;
 };
 
+TEST_F(OriginTrialFeaturesTest, TestOriginTrialsNames) {
+  // Check if our disabled trials are still valid trials in Chromium.
+  // If any name fails check if the trial was removed and then it can be removed
+  // from origin_trials.cc and origin_trial_context.cc overrides.
+  for (const auto& trial : kBraveDisabledTrials) {
+    EXPECT_TRUE(origin_trials::IsTrialValid_ForTests(trial.trial_name))
+        << std::string("Failing trial: ") + trial.trial_name;
+  }
+}
+
 TEST_F(OriginTrialFeaturesTest, TestBlinkRuntimeFeaturesViaOriginTrials) {
   // Test origin trials overrides.
-  EXPECT_FALSE(origin_trials::IsTrialValid("SubresourceWebBundles"));
-  EXPECT_FALSE(
-      origin_trials::IsTrialValid("SignedExchangeSubresourcePrefetch"));
+  for (const auto& trial : kBraveDisabledTrials) {
+    // Check that the runtime feature is initially disabled.
+    EXPECT_FALSE((*trial.feature_enabled_checker)(GetExecutionContext()))
+        << std::string("Failing trial: ") + trial.trial_name;
 
-  // Test trials framework.
-  GetWindow()->GetOriginTrialContext()->AddFeature(
-      OriginTrialFeature::kSubresourceWebBundles);
-  EXPECT_FALSE(GetWindow()->GetOriginTrialContext()->IsFeatureEnabled(
-      OriginTrialFeature::kSubresourceWebBundles));
+    // IsTrialValid override.
+    EXPECT_FALSE(origin_trials::IsTrialValid(trial.trial_name))
+        << std::string("Failing trial: ") + trial.trial_name;
 
-  GetWindow()->GetOriginTrialContext()->AddFeature(
-      OriginTrialFeature::kSignedExchangeSubresourcePrefetch);
-  EXPECT_FALSE(GetWindow()->GetOriginTrialContext()->IsFeatureEnabled(
-      OriginTrialFeature::kSignedExchangeSubresourcePrefetch));
+    // Trials framework AddFeature override.
+    GetWindow()->GetOriginTrialContext()->AddFeature(trial.trial_feature);
+    EXPECT_FALSE(GetWindow()->GetOriginTrialContext()->IsFeatureEnabled(
+        trial.trial_feature))
+        << std::string("Failing trial: ") + trial.trial_name;
 
-  // Force via origin trial names.
-  //WTF::Vector<WTF::String> forced_trials = {
-  //    "SubresourceWebBundles", "SignedExchangeSubresourcePrefetch"};
-  GetWindow()->GetOriginTrialContext()->AddForceEnabledTrials(
-      {"SubresourceWebBundles"});
-  EXPECT_FALSE(GetWindow()->GetOriginTrialContext()->IsFeatureEnabled(
-      OriginTrialFeature::kSubresourceWebBundles));
-  GetWindow()->GetOriginTrialContext()->AddForceEnabledTrials(
-      {"SignedExchangeSubresourcePrefetch"});
-  EXPECT_FALSE(GetWindow()->GetOriginTrialContext()->IsFeatureEnabled(
-      OriginTrialFeature::kSignedExchangeSubresourcePrefetch));
+    // Trials framework force via origin trial names.
+    WTF::Vector<WTF::String> forced_trials = {trial.trial_name};
+    GetWindow()->GetOriginTrialContext()->AddForceEnabledTrials(forced_trials);
+    EXPECT_FALSE(GetWindow()->GetOriginTrialContext()->IsFeatureEnabled(
+        trial.trial_feature))
+        << std::string("Failing trial: ") + trial.trial_name;
 
-  // Check runtime features return as disabled.
-  CheckAllDisabled();
+    // Check that the runtime feature is still disabled.
+    EXPECT_FALSE((*trial.feature_enabled_checker)(GetExecutionContext()))
+        << std::string("Failing trial: ") + trial.trial_name;
+  }
 }
 
 TEST_F(OriginTrialFeaturesTest, TestBlinkRuntimeFeaturesWithoutOriginTrials) {
   // The following don't currently have origin trials associated with them,
   // but if they end up having them we should be able to catch them.
+  RuntimeEnabledFeatures::SetDigitalGoodsEnabled(false);
+  // [Available in Cr87] RuntimeEnabledFeatures::SetDirectSocketsEnabled(false);
   RuntimeEnabledFeatures::SetLangClientHintHeaderEnabled(false);
   RuntimeEnabledFeatures::SetSignedExchangePrefetchCacheForNavigationsEnabled(
       false);
@@ -98,10 +122,14 @@ TEST_F(OriginTrialFeaturesTest, TestBlinkRuntimeFeaturesWithoutOriginTrials) {
   // Enable all origin trial controlled features.
   RuntimeEnabledFeatures::SetOriginTrialControlledFeaturesEnabled(true);
 
-  // LangClientHintHeader
+  // Check if features in question became enabled.
+  EXPECT_FALSE(
+      RuntimeEnabledFeatures::DigitalGoodsEnabled(GetExecutionContext()));
+  // [Available in Cr87]
+  // EXPECT_FALSE(
+  //    RuntimeEnabledFeatures::DirectSocketsEnabled(GetExecutionContext()));
   EXPECT_FALSE(RuntimeEnabledFeatures::LangClientHintHeaderEnabled(
       GetExecutionContext()));
-  // SignedExchangePrefetchCacheForNavigations
   EXPECT_FALSE(
       RuntimeEnabledFeatures::SignedExchangePrefetchCacheForNavigationsEnabled(
           GetExecutionContext()));

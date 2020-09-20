@@ -24,6 +24,10 @@ if (is_linux) {
   import("//brave/build/linux/channels.gni")
 }
 
+declare_args() {
+  audit_dev_deps = false
+}
+
 if (!is_ios) {
   group("child_dependencies") {
     deps = [
@@ -209,6 +213,11 @@ group("create_dist") {
   if (is_android) {
     deps += [
       "app/$target_os:create_dist_zips"
+    ]
+  } else if (is_linux) {
+    # zip will be created along with installer
+    deps += [
+      ":create_symbols_dist"
     ]
   } else {
     deps += [
@@ -535,5 +544,8 @@ action("audit_deps") {
 
   if (defined(rustc_toolchain)) {
     args += [ "--toolchain=$rustc_toolchain" ]
+  }
+  if (audit_dev_deps) {
+    args += [ "--audit_dev_deps" ]
   }
 }

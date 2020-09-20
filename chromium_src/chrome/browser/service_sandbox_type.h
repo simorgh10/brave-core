@@ -16,9 +16,9 @@ class ProfileImport;
 }  // namespace brave
 
 template <>
-inline content::SandboxType
+inline sandbox::policy::SandboxType
 content::GetServiceSandboxType<brave::mojom::ProfileImport>() {
-  return content::SandboxType::kNoSandbox;
+  return sandbox::policy::SandboxType::kNoSandbox;
 }
 
 // ipfs::mojom::IpfsService
@@ -29,9 +29,35 @@ class IpfsService;
 }  // namespace ipfs
 
 template <>
-inline content::SandboxType
+inline sandbox::policy::SandboxType
 content::GetServiceSandboxType<ipfs::mojom::IpfsService>() {
-  return content::SandboxType::kNoSandbox;
+  return sandbox::policy::SandboxType::kNoSandbox;
 }
+
+namespace tor {
+namespace mojom {
+class TorLauncher;
+}  // namespace mojom
+}  // namespace tor
+
+template <>
+inline sandbox::policy::SandboxType
+content::GetServiceSandboxType<tor::mojom::TorLauncher>() {
+  return sandbox::policy::SandboxType::kNoSandbox;
+}
+
+#if !defined(OS_ANDROID)  // Android will use default, which is kUtility.
+namespace bat_ledger {
+namespace mojom {
+class BatLedgerService;
+}  // namespace mojom
+}  // namespace bat_ledger
+
+template <>
+inline sandbox::policy::SandboxType
+content::GetServiceSandboxType<bat_ledger::mojom::BatLedgerService>() {
+  return sandbox::policy::SandboxType::kNoSandbox;
+}
+#endif  // !defined(OS_ANDROID)
 
 #endif  // BRAVE_CHROMIUM_SRC_CHROME_BROWSER_SERVICE_SANDBOX_TYPE_H_

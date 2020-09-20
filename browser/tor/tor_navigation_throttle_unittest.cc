@@ -10,8 +10,8 @@
 #include "base/files/scoped_temp_dir.h"
 #include "base/test/bind_test_util.h"
 #include "brave/browser/profiles/brave_profile_manager.h"
+#include "brave/browser/profiles/brave_unittest_profile_manager.h"
 #include "brave/browser/profiles/profile_util.h"
-#include "brave/browser/profiles/tor_unittest_profile_manager.h"
 #include "brave/browser/tor/tor_profile_service.h"
 #include "brave/browser/tor/tor_profile_service_factory.h"
 #include "chrome/test/base/scoped_testing_local_state.h"
@@ -39,7 +39,7 @@ class TorNavigationThrottleUnitTest : public testing::Test {
     // Create a new temporary directory, and store the path
     ASSERT_TRUE(temp_dir_.CreateUniqueTempDir());
     TestingBrowserProcess::GetGlobal()->SetProfileManager(
-        new TorUnittestProfileManager(temp_dir_.GetPath()));
+        new BraveUnittestProfileManager(temp_dir_.GetPath()));
     // Create profile.
     ProfileManager* profile_manager = g_browser_process->profile_manager();
     ASSERT_TRUE(profile_manager);
@@ -168,7 +168,7 @@ TEST_F(TorNavigationThrottleUnitTest, DeferUntilTorProcessLaunched) {
   test_handle.set_url(url2);
   EXPECT_EQ(NavigationThrottle::PROCEED, throttle->WillStartRequest().action())
       << url2;
-  throttle->OnTorLaunched(true, 5566);
+  throttle->OnTorCircuitEstablished(true);
   EXPECT_TRUE(was_navigation_resumed);
   tor_profile_service()->SetTorLaunchedForTest();
   EXPECT_EQ(NavigationThrottle::PROCEED, throttle->WillStartRequest().action())

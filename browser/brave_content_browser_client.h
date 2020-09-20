@@ -15,7 +15,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/content_browser_client.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
-#include "third_party/blink/public/mojom/referrer.mojom.h"
+#include "third_party/blink/public/mojom/loader/referrer.mojom.h"
 
 class PrefChangeRegistrar;
 
@@ -49,10 +49,6 @@ class BraveContentBrowserClient : public ChromeContentBrowserClient {
       content::BrowserContext* browser_context,
       const url::Origin& requesting_origin,
       const url::Origin& embedding_origin) override;
-
-  base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
-      base::StringPiece name) override;
-  std::vector<service_manager::Manifest> GetExtraServiceManifests() override;
 
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;

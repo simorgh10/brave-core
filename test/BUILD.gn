@@ -153,9 +153,9 @@ test("brave_unit_tests") {
     "//components/version_info",
     "//content/public/common",
     "//content/test:test_support",
+    "//extensions/common:common_constants",
     "//services/network/public/cpp:cpp",
     "//services/network:test_support",
-    "//third_party/cacheinvalidation",
   ]
 
   data = [ "data/" ]
@@ -204,6 +204,8 @@ test("brave_unit_tests") {
 
       # TODO(samartnik): this should work on Android, we will review it once unit tests are set up on CI
       "//brave/browser/autoplay/autoplay_permission_context_unittest.cc",
+      "//brave/browser/profiles/brave_unittest_profile_manager.cc",
+      "//brave/browser/profiles/brave_unittest_profile_manager.h",
       "//brave/components/brave_shields/browser/brave_shields_util_unittest.cc",
       "//brave/components/omnibox/browser/fake_autocomplete_provider_client.cc",
       "//brave/components/omnibox/browser/fake_autocomplete_provider_client.h",
@@ -333,7 +335,6 @@ test("brave_unit_tests") {
   if (brave_wallet_enabled) {
     sources += [
       "//brave/browser/extensions/brave_wallet_unittest.cc",
-      "//brave/browser/brave_wallet/brave_wallet_utils_unittest.cc",
     ]
   }
 
@@ -365,8 +366,7 @@ test("brave_unit_tests") {
     sources += [
       # TODO(darkdh): move these out and use buildflag guard once it contains non tor specifics
       "//brave/browser/profiles/brave_profile_manager_unittest.cc",
-      "//brave/browser/profiles/tor_unittest_profile_manager.cc",
-      "//brave/browser/profiles/tor_unittest_profile_manager.h",
+      "//brave/browser/tor/tor_control_unittest.cc",
       "//brave/browser/tor/tor_navigation_throttle_unittest.cc",
       "//brave/common/tor/tor_test_constants.cc",
       "//brave/common/tor/tor_test_constants.h",
@@ -564,7 +564,7 @@ test("brave_browser_tests") {
     "//brave/chromium_src/chrome/browser/ui/views/location_bar/location_bar_view_browsertest.cc",
     "//brave/chromium_src/chrome/browser/ui/views/tabs/tab_hover_card_bubble_view_browsertest.cc",
     "//brave/chromium_src/components/content_settings/core/browser/brave_content_settings_registry_browsertest.cc",
-    "//brave/chromium_src/components/history/core/browser/thumbnail_database_browsertest.cc",
+    "//brave/chromium_src/components/favicon/core/favicon_database_browsertest.cc",
     "//brave/chromium_src/third_party/blink/public/platform/disable_client_hints_browsertest.cc",
     "//brave/chromium_src/third_party/blink/renderer/core/frame/reporting_observer_browsertest.cc",
     "//brave/chromium_src/third_party/blink/renderer/modules/battery/navigator_batterytest.cc",
@@ -749,6 +749,7 @@ test("brave_browser_tests") {
     "//components/prefs",
     "//components/safe_browsing/core:features",
     "//content/test:test_support",
+    "//extensions/common:common_constants",
     "//ppapi/buildflags",
     ":brave_browser_tests_deps",
     "//third_party/blink/public/common",
@@ -815,6 +816,7 @@ if (is_android) {
       "//chrome/test/android:chrome_java_test_support",
       "//components/search_engines/android:java",
       "//components/sync/android:sync_java",
+      "//third_party/android_support_test_runner:runner_java",
       "//third_party/junit",
     ]
   }

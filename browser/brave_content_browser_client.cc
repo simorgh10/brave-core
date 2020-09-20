@@ -24,7 +24,6 @@
 #include "brave/common/webui_url_constants.h"
 #include "brave/components/binance/browser/buildflags/buildflags.h"
 #include "brave/components/gemini/browser/buildflags/buildflags.h"
-#include "brave/components/brave_ads/browser/buildflags/buildflags.h"
 #include "brave/components/brave_rewards/browser/buildflags/buildflags.h"
 #include "brave/components/brave_shields/browser/brave_shields_util.h"
 #include "brave/components/brave_shields/browser/brave_shields_web_contents_observer.h"
@@ -34,14 +33,13 @@
 #include "brave/components/brave_webtorrent/browser/buildflags/buildflags.h"
 #include "brave/components/ipfs/browser/buildflags/buildflags.h"
 #include "brave/components/ipfs/browser/features.h"
-#include "brave/components/services/brave_content_browser_overlay_manifest.h"
 #include "brave/components/speedreader/buildflags.h"
 #include "brave/grit/brave_generated_resources.h"
 #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_io_data.h"
 #include "chrome/common/url_constants.h"
-#include "components/content_settings/browser/tab_specific_content_settings.h"
+#include "components/content_settings/browser/page_specific_content_settings.h"
 #include "components/prefs/pref_service.h"
 #include "components/services/heap_profiling/public/mojom/heap_profiling_client.mojom.h"
 #include "content/browser/frame_host/render_frame_host_impl.h"
@@ -55,7 +53,6 @@
 #include "extensions/buildflags/buildflags.h"
 #include "net/base/registry_controlled_domains/registry_controlled_domain.h"
 #include "net/cookies/site_for_cookies.h"
-#include "services/service_manager/public/cpp/manifest_builder.h"
 #include "third_party/blink/public/common/loader/url_loader_throttle.h"
 #include "ui/base/l10n/l10n_util.h"
 
@@ -64,16 +61,6 @@ using content::BrowserThread;
 using content::ContentBrowserClient;
 using content::RenderFrameHost;
 using content::WebContents;
-
-#if BUILDFLAG(BRAVE_ADS_ENABLED)
-#include "brave/components/services/bat_ads/public/cpp/manifest.h"
-#include "brave/components/services/bat_ads/public/interfaces/bat_ads.mojom.h"
-#endif
-
-#if BUILDFLAG(BRAVE_REWARDS_ENABLED)
-#include "brave/components/services/bat_ledger/public/cpp/manifest.h"
-#include "brave/components/services/bat_ledger/public/interfaces/bat_ledger.mojom.h"
-#endif
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "chrome/browser/extensions/chrome_content_browser_client_extensions_part.h"
@@ -97,11 +84,6 @@ using extensions::ChromeContentBrowserClientExtensionsPart;
 
 #if BUILDFLAG(ENABLE_TOR)
 #include "brave/browser/tor/tor_navigation_throttle.h"
-#include "brave/browser/tor/tor_profile_service_factory.h"
-#include "brave/common/tor/switches.h"
-#include "brave/components/services/tor/public/cpp/manifest.h"
-#include "brave/components/services/tor/public/interfaces/tor.mojom.h"
-#include "brave/components/services/tor/tor_launcher_service.h"
 #endif
 
 #if BUILDFLAG(ENABLE_SPEEDREADER)
@@ -120,6 +102,7 @@ using extensions::ChromeContentBrowserClientExtensionsPart;
 
 #if BUILDFLAG(BRAVE_WALLET_ENABLED)
 #include "brave/browser/brave_wallet/brave_wallet_service_factory.h"
+#include "brave/components/brave_wallet/common/brave_wallet_constants.h"
 #include "brave/components/brave_wallet/browser/brave_wallet_service.h"
 #endif
 
@@ -156,7 +139,7 @@ BraveContentBrowserClient::CreateBrowserMainParts(
       ChromeContentBrowserClient::CreateBrowserMainParts(parameters);
   ChromeBrowserMainParts* chrome_main_parts =
       static_cast<ChromeBrowserMainParts*>(main_parts.get());
-  chrome_main_parts->AddParts(new BraveBrowserMainExtraParts());
+  chrome_main_parts->AddParts(std::make_unique<BraveBrowserMainExtraParts>());
   return main_parts;
 }
 
@@ -248,32 +231,6 @@ bool BraveContentBrowserClient::HandleExternalProtocol(
       out_factory);
 }
 
-base::Optional<service_manager::Manifest>
-BraveContentBrowserClient::GetServiceManifestOverlay(base::StringPiece name) {
-  auto manifest = ChromeContentBrowserClient::GetServiceManifestOverlay(name);
-  if (name == content::mojom::kBrowserServiceName) {
-    manifest->Amend(GetBraveContentBrowserOverlayManifest());
-  }
-  return manifest;
-}
-
-std::vector<service_manager::Manifest>
-BraveContentBrowserClient::GetExtraServiceManifests() {
-  auto manifests = ChromeContentBrowserClient::GetExtraServiceManifests();
-
-#if BUILDFLAG(ENABLE_TOR)
-  manifests.push_back(tor::GetTorLauncherManifest());
-#endif
-#if BUILDFLAG(BRAVE_ADS_ENABLED)
-  manifests.push_back(bat_ads::GetManifest());
-#endif
-#if BUILDFLAG(BRAVE_REWARDS_ENABLED)
-  manifests.push_back(bat_ledger::GetManifest());
-#endif
-
-  return manifests;
-}
-
 void BraveContentBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int child_process_id) {
@@ -298,20 +255,6 @@ void BraveContentBrowserClient::AppendExtraCommandLineSwitches(
     }
     command_line->AppendSwitchASCII("brave_session_token",
                                     base::NumberToString(session_token));
-  }
-
-  if (process_type == switches::kUtilityProcess) {
-#if BUILDFLAG(ENABLE_TOR)
-      // This is not ideal because it adds the tor executable as a switch
-      // for every utility process, but it should be ok until we land a
-      // permanent fix
-      base::FilePath path =
-          g_brave_browser_process->tor_client_updater()->GetExecutablePath();
-      if (!path.empty()) {
-        command_line->AppendSwitchPath(tor::switches::kTorExecutablePath,
-                                       path.BaseName());
-      }
-#endif
   }
 }
 
@@ -518,8 +461,10 @@ BraveContentBrowserClient::CreateThrottlesForNavigation(
 #endif
 
 #if BUILDFLAG(IPFS_ENABLED)
-  throttles.push_back(
-      std::make_unique<ipfs::IpfsNavigationThrottle>(handle));
+  std::unique_ptr<content::NavigationThrottle> ipfs_navigation_throttle =
+    ipfs::IpfsNavigationThrottle::MaybeCreateThrottleFor(handle);
+  if (ipfs_navigation_throttle)
+    throttles.push_back(std::move(ipfs_navigation_throttle));
 #endif
 
   return throttles;

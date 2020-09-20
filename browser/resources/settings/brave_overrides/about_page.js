@@ -14,7 +14,26 @@ RegisterPolymerTemplateModifications({
       if (!version) {
         console.error('[Brave Settings Overrides] Could not find version div')
       }
-      version.innerHTML = '<a id="release-notes" target="_blank" href="https://brave.com/latest/">' + version.innerHTML + '</a>'
+      const parent = version.parentNode
+      const wrapper = document.createElement('a')
+      wrapper.setAttribute('id', 'release-notes')
+      wrapper.setAttribute('target', '_blank')
+      wrapper.setAttribute('rel', 'noopener noreferrer')
+      wrapper.setAttribute('href', 'https://brave.com/latest/')
+      parent.replaceChild(wrapper, version)
+      wrapper.appendChild(version)
+    }
+
+    // Help link shown if update fails
+    const updateStatusMessageLink = section.querySelector('#updateStatusMessage a')
+    if (updateStatusMessageLink) {
+      // <if expr="is_win">
+      updateStatusMessageLink.href = 'https://support.brave.com/hc/en-us/articles/360042816611-Why-isn-t-Brave-updating-automatically-on-Windows-'
+      // </if>
+
+      // <if expr="not is_win">
+      updateStatusMessageLink.href = 'https://community.brave.com?p=update_error'
+      // </if>
     }
   }
 })

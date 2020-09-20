@@ -12,7 +12,6 @@
 #include "brave/browser/brave_browser_process_impl.h"
 #include "brave/browser/extensions/brave_component_loader.h"
 #include "brave/browser/tor/buildflags.h"
-#include "brave/common/extensions/extension_constants.h"
 #include "brave/common/pref_names.h"
 #include "brave/components/brave_webtorrent/grit/brave_webtorrent_resources.h"
 #include "chrome/browser/about_flags.h"
@@ -33,11 +32,16 @@
 #include "content/public/browser/web_ui.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extension_system.h"
+#include "extensions/common/constants.h"
 #include "extensions/common/feature_switch.h"
 
 #if BUILDFLAG(ENABLE_TOR)
 #include "brave/browser/tor/tor_profile_service.h"
 #include "brave/common/tor/pref_names.h"
+#endif
+
+#if BUILDFLAG(BRAVE_WALLET_ENABLED)
+#include "brave/components/brave_wallet/common/brave_wallet_constants.h"
 #endif
 
 BraveDefaultExtensionsHandler::BraveDefaultExtensionsHandler()
@@ -53,10 +57,12 @@ void BraveDefaultExtensionsHandler::RegisterMessages() {
       "setWebTorrentEnabled",
       base::BindRepeating(&BraveDefaultExtensionsHandler::SetWebTorrentEnabled,
                           base::Unretained(this)));
+#if BUILDFLAG(BRAVE_WALLET_ENABLED)
   web_ui()->RegisterMessageCallback(
       "setBraveWalletEnabled",
       base::BindRepeating(&BraveDefaultExtensionsHandler::SetBraveWalletEnabled,
                           base::Unretained(this)));
+#endif
   web_ui()->RegisterMessageCallback(
       "setHangoutsEnabled",
       base::BindRepeating(&BraveDefaultExtensionsHandler::SetHangoutsEnabled,
@@ -299,6 +305,7 @@ void BraveDefaultExtensionsHandler::SetIPFSCompanionEnabled(
   }
 }
 
+#if BUILDFLAG(BRAVE_WALLET_ENABLED)
 void BraveDefaultExtensionsHandler::SetBraveWalletEnabled(
     const base::ListValue* args) {
   CHECK_EQ(args->GetSize(), 1U);
@@ -316,3 +323,4 @@ void BraveDefaultExtensionsHandler::SetBraveWalletEnabled(
         extensions::disable_reason::DisableReason::DISABLE_USER_ACTION);
   }
 }
+#endif

@@ -14,6 +14,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brave/browser/brave_browser_process_impl.h"
+#include "brave/browser/profiles/profile_util.h"
 #include "brave/browser/ui/webui/basic_ui.h"
 #include "brave/common/pref_names.h"
 #include "brave/common/webui_url_constants.h"
@@ -63,10 +64,10 @@ class RewardsTipDOMHandler : public WebUIMessageHandler,
   void OnGetRecurringTips(ledger::type::PublisherInfoList list);
   void TweetTip(const base::ListValue *args);
   void OnlyAnonWallet(const base::ListValue* args);
-  void GetExternalWallet(const base::ListValue* args);
-  void OnExternalWallet(
+  void GetUpholdWallet(const base::ListValue* args);
+  void OnGetUpholdWallet(
       const ledger::type::Result result,
-      ledger::type::ExternalWalletPtr wallet);
+      ledger::type::UpholdWalletPtr wallet);
 
   void OnPublisherBanner(ledger::type::PublisherBannerPtr banner);
 
@@ -147,7 +148,7 @@ void RewardsTipDOMHandler::RegisterMessages() {
   web_ui()->RegisterMessageCallback(
       "brave_rewards_tip.getExternalWallet",
       base::BindRepeating(
-          &RewardsTipDOMHandler::GetExternalWallet,
+          &RewardsTipDOMHandler::GetUpholdWallet,
           base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "brave_rewards_tip.onlyAnonWallet",
@@ -291,7 +292,7 @@ BraveTipUI::BraveTipUI(content::WebUI* web_ui, const std::string& name)
     : ConstrainedWebDialogUI(web_ui) {
   Profile* profile = Profile::FromWebUI(web_ui);
   // Show error for non-supported contexts
-  if (profile->IsOffTheRecord()) {
+  if (!brave::IsRegularProfile(profile)) {
     return;
   }
   content::WebUIDataSource* data_source = CreateBasicUIHTMLSource(profile,
@@ -428,23 +429,21 @@ void RewardsTipDOMHandler::FetchBalance(const base::ListValue* args) {
   }
 }
 
-void RewardsTipDOMHandler::GetExternalWallet(
+void RewardsTipDOMHandler::GetUpholdWallet(
     const base::ListValue* args) {
   if (!rewards_service_) {
     return;
   }
 
-  const std::string type = args->GetList()[0].GetString();
-
-  rewards_service_->GetExternalWallet(type,
+  rewards_service_->GetUpholdWallet(
      base::BindOnce(
-         &RewardsTipDOMHandler::OnExternalWallet,
+         &RewardsTipDOMHandler::OnGetUpholdWallet,
          weak_factory_.GetWeakPtr()));
 }
 
-void RewardsTipDOMHandler::OnExternalWallet(
+void RewardsTipDOMHandler::OnGetUpholdWallet(
     const ledger::type::Result result,
-    ledger::type::ExternalWalletPtr wallet) {
+    ledger::type::UpholdWalletPtr wallet) {
   if (!web_ui()->CanCallJavascript()) {
     return;
   }
@@ -454,7 +453,6 @@ void RewardsTipDOMHandler::OnExternalWallet(
   if (wallet) {
     data.SetString("token", wallet->token);
     data.SetString("address", wallet->address);
-    data.SetString("type", wallet->type);
     data.SetString("verifyUrl", wallet->verify_url);
     data.SetString("addUrl", wallet->add_url);
     data.SetString("withdrawUrl", wallet->withdraw_url);

@@ -145,7 +145,6 @@ source_set("browser_process") {
     "//brave/components/ntp_tiles",
     "//brave/components/p3a",
     "//brave/components/resources",
-    "//brave/components/services:brave_content_manifest_overlays",
     "//brave/components/speedreader:buildflags",
     "//brave/components/weekly_storage",
     "//brave/services/network/public/cpp",
@@ -202,6 +201,7 @@ source_set("browser_process") {
   if (brave_wallet_enabled) {
     deps += [
       "//brave/components/brave_wallet/browser",
+      "//brave/components/brave_wallet/common",
       "brave_wallet",
     ]
   }
@@ -231,43 +231,8 @@ source_set("browser_process") {
       "//brave/app:brave_generated_resources_grit",
     ]
   } else {
-    sources += [
-      "android/brave_feature_list.cc",
-      "android/brave_relaunch_utils.cc",
-      "android/brave_shields_content_settings.cc",
-      "android/brave_shields_content_settings.h",
-      "android/brave_stats_updater_android.cc",
-    ]
-
-    if (brave_ads_enabled) {
-      sources += [
-        "brave_ads/android/brave_ads_native_helper.cc",
-      ]
-
-      deps += [
-        "brave_ads/android:jni_headers",
-      ]
-    }
-
-    if (enable_brave_sync) {
-      sources += [
-        "android/brave_sync_worker.cc",
-        "android/brave_sync_worker.h",
-        "sync/brave_sync_devices_android.cc",
-        "sync/brave_sync_devices_android.h",
-      ]
-      deps += [
-        "//components/sync",
-        "//components/sync_device_info",
-      ]
-    }
-
     deps += [
-      "//brave/browser/android/preferences",
-      "//brave/build/android:jni_headers",
-      "//chrome/android:jni_headers",
-      "//components/ntp_tiles",
-      "//components/translate/core/browser",
+      "android:android_browser_process",
     ]
   }
 
@@ -347,13 +312,16 @@ source_set("browser_process") {
   if (enable_tor) {
     deps += [
       "//brave/browser/tor",
-      "//brave/components/services/tor/public/cpp:manifest",
       "//brave/common/tor:pref_names",
     ]
   }
 
   if (enable_extensions) {
-    deps += [ "extensions" ]
+    deps += [
+      "extensions",
+      "//extensions/common:common_constants",
+    ]
+
   }
 
   if (enable_brave_referrals) {
@@ -370,7 +338,6 @@ source_set("browser_process") {
   if (brave_ads_enabled) {
     deps += [
       "//brave/components/brave_user_model/browser",
-      "//brave/components/services/bat_ads/public/cpp:manifest",
       "//components/dom_distiller/core",
     ]
   }
@@ -406,7 +373,6 @@ source_set("browser_process") {
 
     deps += [
       "//brave/components/brave_rewards/browser",
-      "//brave/components/services/bat_ledger/public/cpp:manifest",
       "//brave/vendor/bat-native-ledger:headers",
     ]
   }

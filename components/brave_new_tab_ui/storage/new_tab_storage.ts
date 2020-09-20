@@ -28,6 +28,8 @@ export const defaultState: NewTab.State = {
   geminiSupported: false,
   isIncognito: chrome.extension.inIncognitoContext,
   useAlternativePrivateSearchEngine: false,
+  torCircuitEstablished: false,
+  torInitProgress: '',
   isTor: false,
   isQwant: false,
   stats: {
@@ -87,7 +89,8 @@ export const defaultState: NewTab.State = {
     accountBTCUSDValue: '0.00',
     disconnectInProgress: false,
     authInvalid: false,
-    selectedView: 'summary'
+    selectedView: 'summary',
+    depositInfoSaved: false
   },
   geminiState: {
     geminiClientUrl: '',

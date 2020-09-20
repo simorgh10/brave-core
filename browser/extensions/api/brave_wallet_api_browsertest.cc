@@ -7,9 +7,9 @@
 #include "base/scoped_observer.h"
 #include "brave/browser/infobars/crypto_wallets_infobar_delegate.h"
 #include "brave/common/brave_paths.h"
-#include "brave/common/brave_wallet_constants.h"
-#include "brave/common/extensions/extension_constants.h"
 #include "brave/common/pref_names.h"
+#include "brave/components/brave_wallet/common/brave_wallet_constants.h"
+#include "brave/components/brave_wallet/common/brave_wallet_pref_names.h"
 #include "chrome/browser/infobars/infobar_service.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/browser.h"
@@ -20,6 +20,7 @@
 #include "content/public/test/browser_test.h"
 #include "content/public/test/browser_test_utils.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
 #include "extensions/common/extension_builder.h"
 #include "extensions/test/extension_test_message_listener.h"
@@ -68,7 +69,7 @@ class BraveWalletAPIBrowserTest : public InProcessBrowserTest,
     ASSERT_TRUE(embedded_test_server()->Start());
   }
 
-  void AddFakeMetaMaskExtension() {
+  void AddFakeMetaMaskExtension(bool is_update) {
     DictionaryBuilder manifest;
     manifest.Set("name", "ext")
         .Set("version", "0.1")
@@ -78,9 +79,25 @@ class BraveWalletAPIBrowserTest : public InProcessBrowserTest,
                      .SetID(metamask_extension_id)
                      .Build();
     ASSERT_TRUE(extension_);
-    ExtensionRegistry::Get(browser()->profile())->AddReady(extension_.get());
+    if (!is_update) {
+      ExtensionRegistry::Get(browser()->profile())->AddEnabled(
+          extension_.get());
+    }
+    ExtensionRegistry::Get(browser()->profile())->TriggerOnInstalled(
+        extension_.get(), is_update);
+    if (!is_update) {
+      ExtensionRegistry::Get(browser()->profile())->AddReady(extension_.get());
+    }
   }
 
+  void RemoveFakeMetaMaskExtension() {
+    ExtensionRegistry::Get(browser()->profile())->RemoveReady(
+        metamask_extension_id);
+    ExtensionRegistry::Get(browser()->profile())->RemoveEnabled(
+        metamask_extension_id);
+    ExtensionRegistry::Get(browser()->profile())->TriggerOnUninstalled(
+        extension_.get(), extensions::UNINSTALL_REASON_FOR_TESTING);
+  }
 
   ~BraveWalletAPIBrowserTest() override {
   }
@@ -175,38 +192,40 @@ IN_PROC_BROWSER_TEST_F(BraveWalletAPIBrowserTest, DappDetectionTestAccept) {
 }
 
 IN_PROC_BROWSER_TEST_F(BraveWalletAPIBrowserTest,
-    DappDetectionWithMetaMaskTestAccept) {
+    FakeInstallMetaMask) {
   WaitForBraveExtensionAdded();
-  AddFakeMetaMaskExtension();
-  InfoBarService* infobar_service =
-      InfoBarService::FromWebContents(active_contents());
-  AddInfoBarObserver(infobar_service);
-  EXPECT_TRUE(
-      NavigateToURLUntilLoadStop("a.com", "/dapp.html"));
-  WaitForCryptoWalletsInfobarAdded();
-  CryptoWalletsInfoBarAccept(ConfirmInfoBarDelegate::BUTTON_OK |
-      ConfirmInfoBarDelegate::BUTTON_CANCEL);
-  WaitForTabCount(2);
-  RemoveInfoBarObserver(infobar_service);
-}
-
-IN_PROC_BROWSER_TEST_F(BraveWalletAPIBrowserTest,
-    DappDetectionWithMetaMaskTestCancel) {
-  WaitForBraveExtensionAdded();
-  AddFakeMetaMaskExtension();
-  InfoBarService* infobar_service =
-      InfoBarService::FromWebContents(active_contents());
-  AddInfoBarObserver(infobar_service);
-  EXPECT_TRUE(
-      NavigateToURLUntilLoadStop("a.com", "/dapp.html"));
-  WaitForCryptoWalletsInfobarAdded();
-  CryptoWalletsInfoBarCancel(ConfirmInfoBarDelegate::BUTTON_OK |
-      ConfirmInfoBarDelegate::BUTTON_CANCEL);
+  AddFakeMetaMaskExtension(false);
+  // Should auto select MetaMask
   auto provider = static_cast<BraveWalletWeb3ProviderTypes>(
       browser()->profile()->GetPrefs()->GetInteger(kBraveWalletWeb3Provider));
   ASSERT_EQ(provider, BraveWalletWeb3ProviderTypes::METAMASK);
-  RemoveInfoBarObserver(infobar_service);
 }
 
+IN_PROC_BROWSER_TEST_F(BraveWalletAPIBrowserTest,
+    FakeUninstallMetaMask) {
+  WaitForBraveExtensionAdded();
+  AddFakeMetaMaskExtension(false);
+  RemoveFakeMetaMaskExtension();
+  // Should revert back to Ask
+  auto provider = static_cast<BraveWalletWeb3ProviderTypes>(
+      browser()->profile()->GetPrefs()->GetInteger(kBraveWalletWeb3Provider));
+  ASSERT_EQ(provider, BraveWalletWeb3ProviderTypes::CRYPTO_WALLETS);
+}
+
+IN_PROC_BROWSER_TEST_F(BraveWalletAPIBrowserTest,
+    UpdatesDoNotChangeSettings) {
+  WaitForBraveExtensionAdded();
+  // User installs MetaMask
+  AddFakeMetaMaskExtension(false);
+  // Then if the user explicitly manually sets it to Crypto Wallets
+  browser()->profile()->GetPrefs()->SetInteger(kBraveWalletWeb3Provider,
+      static_cast<int>(BraveWalletWeb3ProviderTypes::CRYPTO_WALLETS));
+  // Then the user updates MetaMask
+  AddFakeMetaMaskExtension(true);
+  // It should not toggle the setting
+  auto provider = static_cast<BraveWalletWeb3ProviderTypes>(
+      browser()->profile()->GetPrefs()->GetInteger(kBraveWalletWeb3Provider));
+  ASSERT_EQ(provider, BraveWalletWeb3ProviderTypes::CRYPTO_WALLETS);
+}
 
 }  // namespace extensions

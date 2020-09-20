@@ -37,8 +37,8 @@ using HasSufficientBalanceToReconcileCallback = std::function<void(bool)>;
 using FetchBalanceCallback =
     std::function<void(type::Result, type::BalancePtr)>;
 
-using ExternalWalletCallback =
-    std::function<void(type::Result, type::ExternalWalletPtr)>;
+using UpholdWalletCallback =
+    std::function<void(type::Result, type::UpholdWalletPtr)>;
 
 using ExternalWalletAuthorizationCallback =
     std::function<void(type::Result, std::map<std::string, std::string>)>;
@@ -93,6 +93,9 @@ using PendingContributionInfoListCallback =
 using PublisherInfoListCallback = std::function<void(type::PublisherInfoList)>;
 
 using PublisherInfoCallback =
+    std::function<void(const type::Result, type::PublisherInfoPtr)>;
+
+using GetPublisherInfoCallback =
     std::function<void(const type::Result, type::PublisherInfoPtr)>;
 
 class LEDGER_EXPORT Ledger {
@@ -231,8 +234,6 @@ class LEDGER_EXPORT Ledger {
       const std::string& solution,
       AttestPromotionCallback callback) const = 0;
 
-  virtual std::string GetWalletPassphrase() const = 0;
-
   virtual void GetBalanceReport(
       type::ActivityMonth month,
       int year,
@@ -296,6 +297,25 @@ class LEDGER_EXPORT Ledger {
       const std::map<std::string, std::string>& data,
       PublisherInfoCallback callback) = 0;
 
+  virtual void UpdateMediaDuration(
+      const uint64_t window_id,
+      const std::string& publisher_key,
+      const uint64_t duration,
+      const bool first_visit) = 0;
+
+  virtual void GetPublisherInfo(
+      const std::string& publisher_key,
+      GetPublisherInfoCallback callback) = 0;
+
+  virtual void GetPublisherPanelInfo(
+      const std::string& publisher_key,
+      GetPublisherInfoCallback callback) = 0;
+
+  virtual void SavePublisherInfo(
+      const uint64_t window_id,
+      type::PublisherInfoPtr publisher_info,
+      ResultCallback callback) = 0;
+
   virtual void SetInlineTippingPlatformEnabled(
       const type::InlineTipsPlatforms platform,
       bool enabled) = 0;
@@ -321,9 +341,7 @@ class LEDGER_EXPORT Ledger {
 
   virtual void FetchBalance(FetchBalanceCallback callback) = 0;
 
-  virtual void GetExternalWallet(
-      const std::string& wallet_type,
-      ExternalWalletCallback callback) = 0;
+  virtual void GetUpholdWallet(UpholdWalletCallback callback) = 0;
 
   virtual void ExternalWalletAuthorization(
       const std::string& wallet_type,
@@ -350,7 +368,7 @@ class LEDGER_EXPORT Ledger {
 
   virtual void GetAllContributions(ContributionInfoListCallback callback) = 0;
 
-  virtual void SavePublisherInfo(
+  virtual void SavePublisherInfoForTip(
       type::PublisherInfoPtr info,
       ResultCallback callback) = 0;
 
@@ -364,7 +382,7 @@ class LEDGER_EXPORT Ledger {
 
   virtual void ProcessSKU(
       const std::vector<type::SKUOrderItem>& items,
-      type::ExternalWalletPtr wallet,
+      const std::string& wallet_type,
       SKUOrderCallback callback) = 0;
 
   virtual void Shutdown(ResultCallback callback) = 0;

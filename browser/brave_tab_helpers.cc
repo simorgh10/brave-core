@@ -5,12 +5,9 @@
 
 #include "brave/browser/brave_tab_helpers.h"
 
-#include "base/command_line.h"
-#include "base/feature_list.h"
 #include "brave/browser/farbling/farbling_tab_helper.h"
 #include "brave/browser/tor/buildflags.h"
 #include "brave/browser/ui/bookmark/brave_bookmark_tab_helper.h"
-#include "brave/common/brave_switches.h"
 #include "brave/components/brave_ads/browser/ads_tab_helper.h"
 #include "brave/components/brave_perf_predictor/browser/buildflags.h"
 #include "brave/components/brave_rewards/browser/buildflags/buildflags.h"
@@ -20,7 +17,6 @@
 #include "brave/components/ephemeral_storage/browser/ephemeral_storage_tab_helper.h"
 #include "brave/components/greaselion/browser/buildflags/buildflags.h"
 #include "brave/components/ipfs/browser/buildflags/buildflags.h"
-#include "brave/components/ipfs/browser/features.h"
 #include "brave/components/speedreader/buildflags.h"
 #include "content/public/browser/web_contents.h"
 #include "third_party/widevine/cdm/buildflags.h"
@@ -30,6 +26,7 @@
 #endif
 
 #if defined(OS_ANDROID)
+#include "brave/browser/android/brave_cosmetic_resources_tab_helper.h"
 #include "brave/browser/android/preferences/background_video_playback_tab_helper.h"
 #include "brave/browser/android/preferences/website/desktop_mode_tab_helper.h"
 #endif
@@ -79,6 +76,7 @@ void AttachTabHelpers(content::WebContents* web_contents) {
 #if defined(OS_ANDROID)
   DesktopModeTabHelper::CreateForWebContents(web_contents);
   BackgroundVideoPlaybackTabHelper::CreateForWebContents(web_contents);
+  BraveCosmeticResourcesTabHelper::CreateForWebContents(web_contents);
 #else
   // Add tab helpers here unless they are intended for android too
   BraveBookmarkTabHelper::CreateForWebContents(web_contents);
@@ -119,11 +117,7 @@ void AttachTabHelpers(content::WebContents* web_contents) {
 #endif
 
 #if BUILDFLAG(IPFS_ENABLED)
-  if (base::FeatureList::IsEnabled(ipfs::features::kIpfsFeature) &&
-      !base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kDisableIpfsClientUpdaterExtension)) {
-    ipfs::IPFSTabHelper::CreateForWebContents(web_contents);
-  }
+  ipfs::IPFSTabHelper::MaybeCreateForWebContents(web_contents);
 #endif
 
   FarblingTabHelper::CreateForWebContents(web_contents);

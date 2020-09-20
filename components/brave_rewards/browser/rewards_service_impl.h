@@ -14,24 +14,25 @@
 #include <vector>
 
 #include "base/containers/flat_set.h"
-#include "bat/ledger/ledger.h"
-#include "base/files/file_path.h"
 #include "base/files/file.h"
+#include "base/files/file_path.h"
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/one_shot_event.h"
-#include "base/memory/weak_ptr.h"
 #include "base/values.h"
+#include "bat/ledger/ledger.h"
 #include "bat/ledger/ledger_client.h"
-#include "brave/components/services/bat_ledger/public/interfaces/bat_ledger.mojom.h"
 #include "brave/components/brave_rewards/browser/rewards_service.h"
+#include "brave/components/brave_rewards/browser/rewards_service_private_observer.h"
 #include "brave/components/greaselion/browser/buildflags/buildflags.h"
+#include "brave/components/services/bat_ledger/public/interfaces/bat_ledger.mojom.h"
 #include "chrome/browser/bitmap_fetcher/bitmap_fetcher_service.h"
+#include "components/prefs/pref_change_registrar.h"
 #include "content/public/browser/browser_thread.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "ui/gfx/image/image.h"
-#include "brave/components/brave_rewards/browser/rewards_service_private_observer.h"
 
 #if defined(OS_ANDROID)
 #include "brave/components/safetynet/safetynet_check.h"
@@ -126,22 +127,17 @@ class RewardsServiceImpl : public RewardsService,
       const std::string& promotion_id,
       const std::string& solution,
       AttestPromotionCallback callback) override;
-  void GetWalletPassphrase(
-      const GetWalletPassphraseCallback& callback) override;
   void RecoverWallet(const std::string& passPhrase) override;
-  void GetContentSiteList(
-      uint32_t start,
-      uint32_t limit,
-      uint64_t min_visit_time,
-      uint64_t reconcile_stamp,
-      bool allow_non_verified,
-      uint32_t min_visits,
-      const GetContentSiteListCallback& callback) override;
+  void GetActivityInfoList(
+      const uint32_t start,
+      const uint32_t limit,
+      ledger::type::ActivityInfoFilterPtr filter,
+      const GetPublisherInfoListCallback& callback) override;
 
-  void GetExcludedList(const GetContentSiteListCallback& callback) override;
+  void GetExcludedList(const GetPublisherInfoListCallback& callback) override;
 
-  void OnGetContentSiteList(
-      const GetContentSiteListCallback& callback,
+  void OnGetPublisherInfoList(
+      const GetPublisherInfoListCallback& callback,
       ledger::type::PublisherInfoList list);
   void OnLoad(SessionID tab_id, const GURL& url) override;
   void OnUnload(SessionID tab_id) override;
@@ -241,6 +237,25 @@ class RewardsServiceImpl : public RewardsService,
       const std::map<std::string, std::string>& args,
       SaveMediaInfoCallback callback) override;
 
+  void UpdateMediaDuration(
+      const uint64_t window_id,
+      const std::string& publisher_key,
+      const uint64_t duration,
+      const bool first_visit) override;
+
+  void GetPublisherInfo(
+      const std::string& publisher_key,
+      GetPublisherInfoCallback callback) override;
+
+  void GetPublisherPanelInfo(
+      const std::string& publisher_key,
+      GetPublisherInfoCallback callback) override;
+
+  void SavePublisherInfo(
+      const uint64_t window_id,
+      ledger::type::PublisherInfoPtr publisher_info,
+      SavePublisherInfoCallback callback) override;
+
   void SetInlineTippingPlatformEnabled(
       const std::string& key,
       bool enabled) override;
@@ -276,11 +291,9 @@ class RewardsServiceImpl : public RewardsService,
 
   void FetchBalance(FetchBalanceCallback callback) override;
 
-  std::map<std::string, ledger::type::ExternalWalletPtr>
-  GetExternalWallets() override;
+  std::string GetLegacyWallet() override;
 
-  void GetExternalWallet(const std::string& wallet_type,
-                         GetExternalWalletCallback callback) override;
+  void GetUpholdWallet(GetUpholdWalletCallback callback) override;
 
   void ExternalWalletAuthorization(
       const std::string& wallet_type,
@@ -293,10 +306,6 @@ class RewardsServiceImpl : public RewardsService,
       ProcessRewardsPageUrlCallback callback) override;
 
   void DisconnectWallet(const std::string& wallet_type) override;
-
-  void SaveExternalWallet(
-      const std::string& wallet_type,
-      ledger::type::ExternalWalletPtr wallet) override;
 
   bool OnlyAnonWallet() override;
 
@@ -326,15 +335,17 @@ class RewardsServiceImpl : public RewardsService,
   void MaybeShowNotificationAddFundsForTesting(
       base::OnceCallback<void(bool)> callback);
   void CheckInsufficientFundsForTesting();
-  ledger::type::TransferFeeList GetTransferFeesForTesting(
-      const std::string& wallet_type);
   bool IsWalletInitialized();
   void ForTestingSetTestResponseCallback(GetTestResponseCallback callback);
 
  private:
   friend class ::RewardsFlagBrowserTest;
 
-  void EnableGreaseLion(const bool enabled);
+  void InitPrefChangeRegistrar();
+
+  void OnPreferenceChanged(const std::string& key);
+
+  void EnableGreaseLion();
 
   void OnStopLedger(
       StopLedgerCallback callback,
@@ -386,7 +397,14 @@ class RewardsServiceImpl : public RewardsService,
 
   void TriggerOnGetCurrentBalanceReport(
       ledger::type::BalanceReportInfoPtr report);
+
   void MaybeShowBackupNotification(uint64_t boot_stamp);
+
+  void WalletBackupNotification(
+      const uint64_t boot_stamp,
+      const ledger::type::Result result,
+      ledger::type::UpholdWalletPtr wallet);
+
   void MaybeShowAddFundsNotification(uint64_t reconcile_stamp);
 
   void OnGetOneTimeTips(
@@ -430,11 +448,10 @@ class RewardsServiceImpl : public RewardsService,
                       const ledger::type::Result result,
                       ledger::type::BalancePtr balance);
 
-  void OnGetExternalWallet(
-    const std::string& wallet_type,
-    GetExternalWalletCallback callback,
-    const ledger::type::Result result,
-    ledger::type::ExternalWalletPtr wallet);
+  void OnGetUpholdWallet(
+      GetUpholdWalletCallback callback,
+      const ledger::type::Result result,
+      ledger::type::UpholdWalletPtr wallet);
 
   void OnExternalWalletAuthorization(
     const std::string& wallet_type,
@@ -514,6 +531,17 @@ class RewardsServiceImpl : public RewardsService,
   void OnSetOnDemandFaviconComplete(const std::string& favicon_url,
                                     ledger::client::FetchIconCallback callback,
                                     bool success);
+  void OnPublisherInfo(
+      GetPublisherInfoCallback callback,
+      const ledger::type::Result result,
+      ledger::type::PublisherInfoPtr info);
+  void OnPublisherPanelInfo(
+      GetPublisherInfoCallback callback,
+      const ledger::type::Result result,
+      ledger::type::PublisherInfoPtr info);
+  void OnSavePublisherInfo(
+      SavePublisherInfoCallback callback,
+      const ledger::type::Result result);
 
   bool MaybeTailDiagnosticLog(
       const int num_lines);
@@ -592,17 +620,6 @@ class RewardsServiceImpl : public RewardsService,
       const std::string& type,
       const std::vector<std::string>& args,
       ledger::ResultCallback callback) override;
-
-  void SetTransferFee(
-      const std::string& wallet_type,
-      ledger::type::TransferFeePtr transfer_fee) override;
-
-  ledger::type::TransferFeeList GetTransferFees(
-      const std::string& wallet_type) override;
-
-  void RemoveTransferFee(
-      const std::string& wallet_type,
-      const std::string& id) override;
 
   ledger::type::ClientInfoPtr GetClientInfo() override;
 
@@ -747,6 +764,7 @@ class RewardsServiceImpl : public RewardsService,
       current_media_fetchers_;
   std::unique_ptr<base::OneShotTimer> notification_startup_timer_;
   std::unique_ptr<base::RepeatingTimer> notification_periodic_timer_;
+  PrefChangeRegistrar profile_pref_change_registrar_;
 
   uint32_t next_timer_id_;
   bool reset_states_;

@@ -77,12 +77,11 @@ class RewardsDOMHandler : public WebUIMessageHandler,
   void FetchPromotions(const base::ListValue* args);
   void ClaimPromotion(const base::ListValue* args);
   void AttestPromotion(const base::ListValue* args);
-  void GetWalletPassphrase(const base::ListValue* args);
   void RecoverWallet(const base::ListValue* args);
   void GetReconcileStamp(const base::ListValue* args);
   void SaveSetting(const base::ListValue* args);
   void UpdateAdRewards(const base::ListValue* args);
-  void OnContentSiteList(ledger::type::PublisherInfoList list);
+  void OnPublisherList(ledger::type::PublisherInfoList list);
   void OnExcludedSiteList(ledger::type::PublisherInfoList list);
   void ExcludePublisher(const base::ListValue* args);
   void RestorePublishers(const base::ListValue* args);
@@ -122,7 +121,6 @@ class RewardsDOMHandler : public WebUIMessageHandler,
       const bool flagged);
   void SaveAdsSetting(const base::ListValue* args);
   void SetBackupCompleted(const base::ListValue* args);
-  void OnGetWalletPassphrase(const std::string& pass);
   void OnGetContributionAmount(double amount);
   void OnGetAutoContributeProperties(
       ledger::type::AutoContributePropertiesPtr properties);
@@ -132,8 +130,6 @@ class RewardsDOMHandler : public WebUIMessageHandler,
   void OnIsWalletCreated(bool created);
   void GetPendingContributionsTotal(const base::ListValue* args);
   void OnGetPendingContributionsTotal(double amount);
-  void OnContentSiteUpdated(
-      brave_rewards::RewardsService* rewards_service) override;
   void GetTransactionHistory(const base::ListValue* args);
   void GetRewardsMainEnabled(const base::ListValue* args);
   void OnGetRewardsMainEnabled(bool enabled);
@@ -161,10 +157,10 @@ class RewardsDOMHandler : public WebUIMessageHandler,
     const ledger::type::Result result,
     ledger::type::BalancePtr balance);
 
-  void GetExternalWallet(const base::ListValue* args);
-  void OnGetExternalWallet(
+  void GetUpholdWallet(const base::ListValue* args);
+  void OnGetUpholdWallet(
       const ledger::type::Result result,
-      ledger::type::ExternalWalletPtr wallet);
+      ledger::type::UpholdWalletPtr wallet);
   void ProcessRewardsPageUrl(const base::ListValue* args);
 
   void OnProcessRewardsPageUrl(
@@ -367,9 +363,6 @@ void RewardsDOMHandler::RegisterMessages() {
   web_ui()->RegisterMessageCallback("brave_rewards.attestPromotion",
       base::BindRepeating(&RewardsDOMHandler::AttestPromotion,
       base::Unretained(this)));
-  web_ui()->RegisterMessageCallback("brave_rewards.getWalletPassphrase",
-      base::BindRepeating(&RewardsDOMHandler::GetWalletPassphrase,
-      base::Unretained(this)));
   web_ui()->RegisterMessageCallback("brave_rewards.recoverWallet",
       base::BindRepeating(&RewardsDOMHandler::RecoverWallet,
       base::Unretained(this)));
@@ -472,7 +465,7 @@ void RewardsDOMHandler::RegisterMessages() {
       base::BindRepeating(&RewardsDOMHandler::FetchBalance,
       base::Unretained(this)));
   web_ui()->RegisterMessageCallback("brave_rewards.getExternalWallet",
-      base::BindRepeating(&RewardsDOMHandler::GetExternalWallet,
+      base::BindRepeating(&RewardsDOMHandler::GetUpholdWallet,
       base::Unretained(this)));
   web_ui()->RegisterMessageCallback("brave_rewards.processRewardsPageUrl",
       base::BindRepeating(&RewardsDOMHandler::ProcessRewardsPageUrl,
@@ -759,21 +752,6 @@ void RewardsDOMHandler::OnPromotionFinished(
       promotion->Clone());
 }
 
-void RewardsDOMHandler::OnGetWalletPassphrase(const std::string& pass) {
-  if (web_ui()->CanCallJavascript()) {
-    web_ui()->CallJavascriptFunctionUnsafe("brave_rewards.walletPassphrase",
-        base::Value(pass));
-  }
-}
-
-void RewardsDOMHandler::GetWalletPassphrase(const base::ListValue* args) {
-  if (rewards_service_) {
-    rewards_service_->GetWalletPassphrase(
-        base::Bind(&RewardsDOMHandler::OnGetWalletPassphrase,
-          weak_factory_.GetWeakPtr()));
-  }
-}
-
 void RewardsDOMHandler::RecoverWallet(const base::ListValue *args) {
   CHECK_EQ(1U, args->GetSize());
   if (rewards_service_) {
@@ -811,22 +789,24 @@ void RewardsDOMHandler::GetReconcileStamp(const base::ListValue* args) {
 
 void RewardsDOMHandler::OnAutoContributePropsReady(
     ledger::type::AutoContributePropertiesPtr properties) {
-  rewards_service_->GetContentSiteList(
-      0,
-      0,
-      properties->contribution_min_time,
-      properties->reconcile_stamp,
-      properties->contribution_non_verified,
-      properties->contribution_min_visits,
-      base::Bind(&RewardsDOMHandler::OnContentSiteList,
-                 weak_factory_.GetWeakPtr()));
-}
+  auto filter = ledger::type::ActivityInfoFilter::New();
+  auto pair = ledger::type::ActivityInfoFilterOrderPair::New(
+      "ai.percent",
+      false);
+  filter->order_by.push_back(std::move(pair));
+  filter->min_duration = properties->contribution_min_time;
+  filter->reconcile_stamp = properties->reconcile_stamp;
+  filter->excluded = ledger::type::ExcludeFilter::FILTER_ALL_EXCEPT_EXCLUDED;
+  filter->percent = 1;
+  filter->non_verified = properties->contribution_non_verified;
+  filter->min_visits = properties->contribution_min_visits;
 
-void RewardsDOMHandler::OnContentSiteUpdated(
-    brave_rewards::RewardsService* rewards_service) {
-  rewards_service_->GetAutoContributeProperties(
-      base::Bind(&RewardsDOMHandler::OnAutoContributePropsReady,
-        weak_factory_.GetWeakPtr()));
+  rewards_service_->GetActivityInfoList(
+      0,
+      0,
+      std::move(filter),
+      base::Bind(&RewardsDOMHandler::OnPublisherList,
+                 weak_factory_.GetWeakPtr()));
 }
 
 void RewardsDOMHandler::GetExcludedSites(const base::ListValue* args) {
@@ -966,8 +946,7 @@ void RewardsDOMHandler::RestorePublisher(const base::ListValue *args) {
   rewards_service_->SetPublisherExclude(publisherKey, false);
 }
 
-void RewardsDOMHandler::OnContentSiteList(
-    ledger::type::PublisherInfoList list) {
+void RewardsDOMHandler::OnPublisherList(ledger::type::PublisherInfoList list) {
   if (!web_ui()->CanCallJavascript()) {
     return;
   }
@@ -1140,9 +1119,13 @@ void RewardsDOMHandler::GetOneTimeTips(const base::ListValue *args) {
 }
 
 void RewardsDOMHandler::GetContributionList(const base::ListValue *args) {
-  if (rewards_service_) {
-    OnContentSiteUpdated(rewards_service_);
+  if (!rewards_service_) {
+    return;
   }
+
+  rewards_service_->GetAutoContributeProperties(
+      base::Bind(&RewardsDOMHandler::OnAutoContributePropsReady,
+        weak_factory_.GetWeakPtr()));
 }
 
 void RewardsDOMHandler::GetAdsData(const base::ListValue *args) {
@@ -1450,7 +1433,7 @@ void RewardsDOMHandler::OnRewardsMainEnabled(
 void RewardsDOMHandler::OnPublisherListNormalized(
     brave_rewards::RewardsService* rewards_service,
     ledger::type::PublisherInfoList list) {
-  OnContentSiteList(std::move(list));
+  OnPublisherList(std::move(list));
 }
 
 void RewardsDOMHandler::GetTransactionHistory(
@@ -1663,22 +1646,19 @@ void RewardsDOMHandler::FetchBalance(const base::ListValue* args) {
   }
 }
 
-void RewardsDOMHandler::GetExternalWallet(const base::ListValue* args) {
-  CHECK_EQ(1U, args->GetSize());
+void RewardsDOMHandler::GetUpholdWallet(const base::ListValue* args) {
   if (!rewards_service_) {
     return;
   }
 
-  const std::string wallet_type = args->GetList()[0].GetString();
-  rewards_service_->GetExternalWallet(
-      wallet_type,
-      base::BindOnce(&RewardsDOMHandler::OnGetExternalWallet,
+  rewards_service_->GetUpholdWallet(
+      base::BindOnce(&RewardsDOMHandler::OnGetUpholdWallet,
                      weak_factory_.GetWeakPtr()));
 }
 
-void RewardsDOMHandler::OnGetExternalWallet(
+void RewardsDOMHandler::OnGetUpholdWallet(
     const ledger::type::Result result,
-    ledger::type::ExternalWalletPtr wallet) {
+    ledger::type::UpholdWalletPtr wallet) {
   if (web_ui()->CanCallJavascript()) {
     base::Value data(base::Value::Type::DICTIONARY);
 
@@ -1689,7 +1669,6 @@ void RewardsDOMHandler::OnGetExternalWallet(
       wallet_dict.SetStringKey("token", wallet->token);
       wallet_dict.SetStringKey("address", wallet->address);
       wallet_dict.SetIntKey("status", static_cast<int>(wallet->status));
-      wallet_dict.SetStringKey("type", wallet->type);
       wallet_dict.SetStringKey("verifyUrl", wallet->verify_url);
       wallet_dict.SetStringKey("addUrl", wallet->add_url);
       wallet_dict.SetStringKey("withdrawUrl", wallet->withdraw_url);

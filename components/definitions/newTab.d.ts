@@ -112,6 +112,8 @@ declare namespace NewTab {
     featureFlagBraveNTPSponsoredImagesWallpaper: boolean
     isIncognito: boolean
     useAlternativePrivateSearchEngine: boolean
+    torCircuitEstablished: boolean,
+    torInitProgress: string,
     isTor: boolean
     isQwant: boolean
     backgroundImage?: Image
@@ -175,6 +177,7 @@ declare namespace NewTab {
     disconnectInProgress: boolean
     authInvalid: boolean
     selectedView: string
+    depositInfoSaved: boolean
   }
 
   export interface GeminiWidgetState {

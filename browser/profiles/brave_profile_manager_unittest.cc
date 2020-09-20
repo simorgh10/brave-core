@@ -11,11 +11,11 @@
 #include "base/files/file_path.h"
 #include "base/files/scoped_temp_dir.h"
 #include "base/strings/utf_string_conversions.h"
+#include "brave/browser/profiles/brave_unittest_profile_manager.h"
 #include "brave/browser/profiles/profile_util.h"
-#include "brave/browser/profiles/tor_unittest_profile_manager.h"
-#include "brave/browser/tor/tor_launcher_factory.h"
+#include "brave/browser/tor/tor_profile_service_factory.h"
+#include "brave/browser/tor/tor_profile_service_impl.h"
 #include "brave/browser/translate/buildflags/buildflags.h"
-#include "brave/common/tor/pref_names.h"
 #include "brave/common/tor/tor_constants.h"
 #include "brave/components/brave_webtorrent/browser/webtorrent_util.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
@@ -67,7 +67,7 @@ class BraveProfileManagerTest : public testing::Test {
     // Create a new temporary directory, and store the path
     ASSERT_TRUE(temp_dir_.CreateUniqueTempDir());
     TestingBrowserProcess::GetGlobal()->SetProfileManager(
-        new TorUnittestProfileManager(temp_dir_.GetPath()));
+        new BraveUnittestProfileManager(temp_dir_.GetPath()));
   }
 
   void TearDown() override {
@@ -254,8 +254,15 @@ TEST_F(BraveProfileManagerTest, ProxyConfigMonitorInTorProfile) {
   auto* proxy_config_service = monitor->GetProxyConfigServiceForTesting();
   net::ProxyConfigWithAnnotation config;
   proxy_config_service->GetLatestProxyConfig(&config);
+  EXPECT_TRUE(config.value().proxy_rules().empty());
+
+  // Emulate get socks info from tor control
+  auto* tor_profile_service = TorProfileServiceFactory::GetForProfile(profile);
+  static_cast<tor::TorProfileServiceImpl*>(tor_profile_service)
+    ->NotifyTorNewProxyURI("socks5://127.0.0.1:5566");
+
+  proxy_config_service->GetLatestProxyConfig(&config);
   const std::string& proxy_uri =
-      config.value().proxy_rules().single_proxies.Get().ToURI();
-  EXPECT_EQ(proxy_uri, g_browser_process->local_state()
-            ->GetString(tor::prefs::kTorProxyString));
+    config.value().proxy_rules().single_proxies.Get().ToURI();
+  EXPECT_EQ(proxy_uri, "socks5://127.0.0.1:5566");
 }

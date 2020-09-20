@@ -13,6 +13,7 @@
 #include "base/containers/flat_map.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/json/json_reader.h"
 #include "base/path_service.h"
 #include "chrome/common/chrome_paths.h"
 #include "base/files/important_file_writer.h"
@@ -51,6 +52,7 @@
 #include "brave/components/brave_ads/browser/notification_helper.h"
 #include "chrome/browser/browser_process.h"
 #include "brave/browser/brave_browser_process_impl.h"
+#include "brave/grit/brave_generated_resources.h"
 #include "chrome/browser/notifications/notification_display_service.h"
 #include "chrome/browser/profiles/profile_manager.h"
 #include "chrome/browser/profiles/profile.h"
@@ -66,12 +68,11 @@
 #include "components/wifi/wifi_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
+#include "content/public/browser/service_process_host.h"
 #include "content/public/browser/storage_partition.h"
-#include "content/public/common/service_manager_connection.h"
 #include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/cpp/simple_url_loader.h"
-#include "services/service_manager/public/cpp/connector.h"
 #include "third_party/dom_distiller_js/dom_distiller.pb.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -173,7 +174,9 @@ bool ResetOnFileTaskRunner(const base::FilePath& path) {
     recursive = false;
   }
 
-  return base::DeleteFile(path, recursive);
+  if (recursive)
+    return base::DeletePathRecursively(path);
+  return base::DeleteFile(path);
 }
 
 net::NetworkTrafficAnnotationTag GetNetworkTrafficAnnotationTag() {
@@ -214,7 +217,7 @@ AdsServiceImpl::AdsServiceImpl(Profile* profile) :
     rewards_service_(brave_rewards::RewardsServiceFactory::GetForProfile(
         profile_)),
     bat_ads_client_receiver_(new bat_ads::AdsClientMojoBridge(this)) {
-  DCHECK(!profile_->IsOffTheRecord());
+  DCHECK(brave::IsRegularProfile(profile_));
 
   MigratePrefs();
 
@@ -357,8 +360,7 @@ void AdsServiceImpl::OnTabUpdated(
     return;
   }
 
-  const bool is_incognito = profile_->IsOffTheRecord() ||
-      brave::IsTorProfile(profile_);
+  const bool is_incognito = !brave::IsRegularProfile(profile_);
 
   bat_ads_->OnTabUpdated(tab_id.id(), url.spec(), is_active,
       is_browser_active, is_incognito);
@@ -378,12 +380,39 @@ void AdsServiceImpl::OnWalletUpdated() {
     return;
   }
 
-  const std::string payment_id =
-      profile_->GetPrefs()->GetString(brave_rewards::prefs::kPaymentId);
-  const std::string recovery_seed_base64 =
-      profile_->GetPrefs()->GetString(brave_rewards::prefs::kRecoverySeed);
+  const std::string json = profile_->GetPrefs()->GetString(
+      brave_rewards::prefs::kWalletBrave);
 
-  bat_ads_->OnWalletUpdated(payment_id, recovery_seed_base64);
+  if (json.empty()) {
+    return;
+  }
+
+  base::Optional<base::Value> value = base::JSONReader::Read(json);
+  if (!value || !value->is_dict()) {
+    VLOG(0) << "Failed to parse wallet";
+    return;
+  }
+
+  base::DictionaryValue* dictionary = nullptr;
+  if (!value->GetAsDictionary(&dictionary)) {
+    VLOG(0) << "Failed to parse wallet";
+    return;
+  }
+
+  const std::string* payment_id = dictionary->FindStringKey("payment_id");
+  if (!payment_id) {
+    VLOG(0) << "Wallet missing payment_id";
+    return;
+  }
+
+  const std::string* recovery_seed_base64 =
+      dictionary->FindStringKey("recovery_seed");
+  if (!recovery_seed_base64) {
+    VLOG(0) << "Wallet missing recovery_seed";
+    return;
+  }
+
+  bat_ads_->OnWalletUpdated(*payment_id, *recovery_seed_base64);
 }
 
 void AdsServiceImpl::UpdateAdRewards(
@@ -582,7 +611,7 @@ bool MigrateConfirmationsStateOnFileTaskRunner(
   if (base::PathExists(rewards_service_base_path)) {
     VLOG(1) << "Deleting " << rewards_service_base_path.value();
 
-    if (!base::DeleteFile(rewards_service_base_path, /* recursive */ false)) {
+    if (!base::DeleteFile(rewards_service_base_path)) {
       VLOG(0) << "Failed to delete " << rewards_service_base_path.value();
     }
   }
@@ -624,10 +653,7 @@ void AdsServiceImpl::Initialize() {
   profile_pref_change_registrar_.Add(prefs::kIdleThreshold,
       base::Bind(&AdsServiceImpl::OnPrefsChanged, base::Unretained(this)));
 
-  profile_pref_change_registrar_.Add(brave_rewards::prefs::kPaymentId,
-      base::Bind(&AdsServiceImpl::OnPrefsChanged, base::Unretained(this)));
-
-  profile_pref_change_registrar_.Add(brave_rewards::prefs::kRecoverySeed,
+  profile_pref_change_registrar_.Add(brave_rewards::prefs::kWalletBrave,
       base::Bind(&AdsServiceImpl::OnPrefsChanged, base::Unretained(this)));
 
 #if !defined(OS_ANDROID)
@@ -700,15 +726,12 @@ bool AdsServiceImpl::StartService() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   DCHECK(!connected());
 
-  auto* connection = content::ServiceManagerConnection::GetForProcess();
-  if (!connection) {
-    return false;
-  }
-
   if (!bat_ads_service_.is_bound()) {
-    connection->GetConnector()->Connect(
-        bat_ads::mojom::kServiceName,
-        bat_ads_service_.BindNewPipeAndPassReceiver());
+    content::ServiceProcessHost::Launch(
+        bat_ads_service_.BindNewPipeAndPassReceiver(),
+        content::ServiceProcessHost::Options()
+            .WithDisplayName(IDS_SERVICE_BAT_ADS)
+            .Pass());
 
     bat_ads_service_.set_disconnect_handler(
         base::Bind(&AdsServiceImpl::MaybeStart, AsWeakPtr(), true));
@@ -1968,8 +1991,7 @@ void AdsServiceImpl::OnPrefsChanged(
     brave_rewards::UpdateAdsP3AOnPreferenceChange(profile_->GetPrefs(), pref);
   } else if (pref == prefs::kIdleThreshold) {
     StartCheckIdleStateTimer();
-  } else if (pref == brave_rewards::prefs::kPaymentId ||
-      pref == brave_rewards::prefs::kRecoverySeed) {
+  } else if (pref == brave_rewards::prefs::kWalletBrave) {
     OnWalletUpdated();
   }
 }

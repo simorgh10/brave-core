@@ -86,8 +86,6 @@ ios_framework_bundle("brave_rewards_ios_framework") {
     "Ledger/Models/BATRewardsNotification.m",
     "Ledger/Models/BATPromotionSolution.h",
     "Ledger/Models/BATPromotionSolution.mm",
-    "Ledger/Models/BATExternalWallet+DictionaryValue.h",
-    "Ledger/Models/BATExternalWallet+DictionaryValue.mm",
     "Shared/BATCommonOperations.h",
     "Shared/BATCommonOperations.mm",
     "Shared/NSURL+Extensions.h",
@@ -155,7 +153,7 @@ ios_framework_bundle("brave_rewards_ios_framework") {
     "$target_gen_dir/ads.mojom.objc.h",
   ]
 
-  libs = [
+  frameworks = [
     "Foundation.framework",
     "UIKit.framework",
     "Security.framework",

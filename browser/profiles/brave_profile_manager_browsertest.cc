@@ -8,10 +8,13 @@
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brave/browser/brave_browser_process_impl.h"
+#include "brave/browser/brave_rewards/rewards_service_factory.h"
 #include "brave/browser/extensions/brave_tor_client_updater.h"
 #include "brave/browser/profiles/profile_util.h"
 #include "brave/browser/tor/buildflags.h"
 #include "brave/common/brave_paths.h"
+#include "brave/components/brave_ads/browser/ads_service_factory.h"
+#include "brave/components/ipfs/browser/buildflags/buildflags.h"
 #include "chrome/browser/bookmarks/bookmark_model_factory.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/chrome_notification_types.h"
@@ -23,6 +26,7 @@
 #include "chrome/browser/profiles/profile_window.h"
 #include "chrome/browser/ui/browser_list.h"
 #include "chrome/test/base/in_process_browser_test.h"
+#include "chrome/test/base/ui_test_utils.h"
 #include "components/bookmarks/browser/bookmark_model.h"
 #include "components/bookmarks/common/bookmark_pref_names.h"
 #include "components/bookmarks/test/bookmark_test_helpers.h"
@@ -43,6 +47,12 @@
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extension_util.h"
 #include "extensions/common/extension_id.h"
+#endif
+
+#if BUILDFLAG(IPFS_ENABLED)
+#include "base/test/scoped_feature_list.h"
+#include "brave/browser/ipfs/ipfs_service_factory.h"
+#include "brave/components/ipfs/browser/features.h"
 #endif
 
 namespace {
@@ -102,6 +112,12 @@ Profile* SwitchToTorProfile() {
 
 class BraveProfileManagerTest : public InProcessBrowserTest {
  public:
+  BraveProfileManagerTest() {
+#if BUILDFLAG(IPFS_ENABLED)
+    feature_list_.InitAndEnableFeature(ipfs::features::kIpfsFeature);
+#endif
+  }
+
   void SetUpOnMainThread() override {
     InProcessBrowserTest::SetUpOnMainThread();
 #if BUILDFLAG(ENABLE_TOR)
@@ -123,6 +139,11 @@ class BraveProfileManagerTest : public InProcessBrowserTest {
     return content_settings->GetContentSetting(
         primary_url, GURL(), ContentSettingsType::JAVASCRIPT, "");
   }
+
+ private:
+#if BUILDFLAG(IPFS_ENABLED)
+  base::test::ScopedFeatureList feature_list_;
+#endif
 };
 
 // Test that legacy profile names (Person X) that have
@@ -185,6 +206,43 @@ IN_PROC_BROWSER_TEST_F(BraveProfileManagerTest, MigrateProfileNames) {
   }
 }
 
+IN_PROC_BROWSER_TEST_F(BraveProfileManagerTest,
+                       ExcludeServicesInOTRAndGuestProfiles) {
+  ProfileManager* profile_manager = g_browser_process->profile_manager();
+  ASSERT_TRUE(profile_manager);
+  Profile* profile = ProfileManager::GetActiveUserProfile();
+  Profile* otr_profile = profile->GetPrimaryOTRProfile();
+
+  profiles::SwitchToGuestProfile(ProfileManager::CreateCallback());
+  ui_test_utils::WaitForBrowserToOpen();
+
+  Profile* guest_profile =
+      profile_manager->GetProfileByPath(ProfileManager::GetGuestProfilePath());
+  ASSERT_TRUE(otr_profile->IsOffTheRecord());
+  ASSERT_TRUE(guest_profile->IsGuestSession());
+
+  EXPECT_NE(
+      brave_rewards::RewardsServiceFactory::GetForProfile(profile), nullptr);
+  EXPECT_EQ(
+      brave_rewards::RewardsServiceFactory::GetForProfile(otr_profile),
+      nullptr);
+  EXPECT_EQ(
+      brave_rewards::RewardsServiceFactory::GetForProfile(guest_profile),
+      nullptr);
+
+  EXPECT_NE(brave_ads::AdsServiceFactory::GetForProfile(profile), nullptr);
+  EXPECT_EQ(brave_ads::AdsServiceFactory::GetForProfile(otr_profile),
+            nullptr);
+  EXPECT_EQ(brave_ads::AdsServiceFactory::GetForProfile(guest_profile),
+            nullptr);
+
+#if BUILDFLAG(IPFS_ENABLED)
+  EXPECT_NE(ipfs::IpfsServiceFactory::GetForContext(profile), nullptr);
+  EXPECT_EQ(ipfs::IpfsServiceFactory::GetForContext(otr_profile), nullptr);
+  EXPECT_EQ(ipfs::IpfsServiceFactory::GetForContext(guest_profile), nullptr);
+#endif
+}
+
 #if BUILDFLAG(ENABLE_TOR)
 IN_PROC_BROWSER_TEST_F(BraveProfileManagerTest,
                        SwitchToTorProfileShareBookmarks) {
@@ -234,6 +292,38 @@ IN_PROC_BROWSER_TEST_F(BraveProfileManagerTest,
       tor_bookmark_model->AddURL(tor_root, 0, title, url3);
   EXPECT_EQ(parent_bookmark_model->GetMostRecentlyAddedUserNodeForURL(url3),
             new_node3);
+}
+
+IN_PROC_BROWSER_TEST_F(BraveProfileManagerTest,
+                       SwitchToTorProfileExcludeServices) {
+  ScopedTorLaunchPreventerForTest prevent_tor_process;
+
+  ProfileManager* profile_manager = g_browser_process->profile_manager();
+  ASSERT_TRUE(profile_manager);
+  Profile* parent_profile = ProfileManager::GetActiveUserProfile();
+
+  Profile* tor_otr_profile = SwitchToTorProfile();
+  Profile* tor_reg_profile = tor_otr_profile->GetOriginalProfile();
+  EXPECT_EQ(brave::GetParentProfile(tor_otr_profile), parent_profile);
+  ASSERT_TRUE(brave::IsTorProfile(tor_otr_profile));
+  ASSERT_TRUE(brave::IsTorProfile(tor_reg_profile));
+  EXPECT_TRUE(tor_otr_profile->IsOffTheRecord());
+  EXPECT_FALSE(tor_reg_profile->IsOffTheRecord());
+
+  EXPECT_EQ(
+      brave_rewards::RewardsServiceFactory::GetForProfile(tor_otr_profile),
+      nullptr);
+  EXPECT_EQ(
+      brave_rewards::RewardsServiceFactory::GetForProfile(tor_reg_profile),
+      nullptr);
+  EXPECT_EQ(brave_ads::AdsServiceFactory::GetForProfile(tor_otr_profile),
+            nullptr);
+  EXPECT_EQ(brave_ads::AdsServiceFactory::GetForProfile(tor_reg_profile),
+            nullptr);
+#if BUILDFLAG(IPFS_ENABLED)
+  EXPECT_EQ(ipfs::IpfsServiceFactory::GetForContext(tor_otr_profile), nullptr);
+  EXPECT_EQ(ipfs::IpfsServiceFactory::GetForContext(tor_reg_profile), nullptr);
+#endif
 }
 
 IN_PROC_BROWSER_TEST_F(BraveProfileManagerTest,

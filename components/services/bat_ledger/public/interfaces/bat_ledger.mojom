@@ -7,8 +7,6 @@ module bat_ledger.mojom;
 import "brave/vendor/bat-native-ledger/include/bat/ledger/public/interfaces/ledger.mojom";
 import "brave/vendor/bat-native-ledger/include/bat/ledger/public/interfaces/ledger_database.mojom";
 
-const string kServiceName = "bat_ledger";
-
 interface BatLedgerService {
   Create(pending_associated_remote<BatLedgerClient> bat_ledger_client,
          pending_associated_receiver<BatLedger> database) => ();
@@ -61,7 +59,6 @@ interface BatLedger {
   FetchPromotions() => (ledger.mojom.Result result, array<ledger.mojom.Promotion> promotion);
   ClaimPromotion(string promotion_id, string payload) => (ledger.mojom.Result result, string response);
   AttestPromotion(string promotion_id, string solution) => (ledger.mojom.Result result, ledger.mojom.Promotion? promotion);
-  GetWalletPassphrase() => (string wallet_passphrase);
   RecoverWallet(string passPhrase) => (ledger.mojom.Result result);
   
   SetRewardsMainEnabled(bool enabled);
@@ -110,6 +107,16 @@ interface BatLedger {
   SaveMediaInfo(string type, map<string, string> args) =>
     (ledger.mojom.Result result, ledger.mojom.PublisherInfo? publisher_info);
 
+  UpdateMediaDuration(uint64 window_id, string publisher_key, uint64 duration, bool first_visit);
+
+  GetPublisherInfo(string publisher_key) => (ledger.mojom.Result result, ledger.mojom.PublisherInfo? info);
+
+  GetPublisherPanelInfo(string publisher_key) =>
+      (ledger.mojom.Result result, ledger.mojom.PublisherInfo? info);
+
+  SavePublisherInfo(uint64 window_id, ledger.mojom.PublisherInfo publisher_info) =>
+      (ledger.mojom.Result result);
+
   SetInlineTippingPlatformEnabled(ledger.mojom.InlineTipsPlatforms platform, bool enabled);
 
   GetInlineTippingPlatformEnabled(ledger.mojom.InlineTipsPlatforms platform) => (bool enabled);
@@ -127,7 +134,7 @@ interface BatLedger {
 
   FetchBalance() => (ledger.mojom.Result result, ledger.mojom.Balance? balance);
 
-  GetExternalWallet(string wallet_type) => (ledger.mojom.Result result, ledger.mojom.ExternalWallet? wallet);
+  GetUpholdWallet() => (ledger.mojom.Result result, ledger.mojom.UpholdWallet? wallet);
 
   ExternalWalletAuthorization(string wallet_type, map<string, string> args) => (ledger.mojom.Result result, map<string, string> args);
 
@@ -141,7 +148,7 @@ interface BatLedger {
 
   GetAllContributions() => (array<ledger.mojom.ContributionInfo> list);
 
-  SavePublisherInfo(ledger.mojom.PublisherInfo info) => (ledger.mojom.Result result);
+  SavePublisherInfoForTip(ledger.mojom.PublisherInfo info) => (ledger.mojom.Result result);
 
   GetMonthlyReport(ledger.mojom.ActivityMonth month, int32 year) => (ledger.mojom.Result result, ledger.mojom.MonthlyReportInfo report);
 
@@ -211,16 +218,10 @@ interface BatLedgerClient {
       string publisher_name);
 
   [Sync]
-  GetExternalWallets() => (map<string, ledger.mojom.ExternalWallet?> wallets);
-
-  SaveExternalWallet(string wallet_type, ledger.mojom.ExternalWallet wallet);
+  GetLegacyWallet() => (string wallet);
 
   ShowNotification(string type, array<string> args) => (ledger.mojom.Result result);
 
-  [Sync]
-  GetTransferFees(string wallet_type) => (map<string, ledger.mojom.TransferFee> list);
-  SetTransferFee(string wallet_type, ledger.mojom.TransferFee transfer_fee);
-  RemoveTransferFee(string wallet_type, string id);
   [Sync]
   GetClientInfo() => (ledger.mojom.ClientInfo info);
   UnblindedTokensReady();

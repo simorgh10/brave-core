@@ -9,15 +9,12 @@
 #include <string>
 
 #include "chrome/utility/chrome_content_utility_client.h"
+#include "mojo/public/cpp/bindings/pending_receiver.h"
 
 class BraveContentUtilityClient : public ChromeContentUtilityClient {
  public:
   BraveContentUtilityClient();
   ~BraveContentUtilityClient() override;
-
-  bool HandleServiceRequest(
-      const std::string& service_name,
-      service_manager::mojom::ServiceRequest request) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(BraveContentUtilityClient);

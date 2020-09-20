@@ -12,6 +12,7 @@
 #include "brave/components/ntp_background_images/common/pref_names.h"
 #include "chrome/browser/extensions/api/settings_private/prefs_util.h"
 #include "chrome/common/extensions/api/settings_private.h"
+#include "chrome/common/pref_names.h"
 #include "components/browsing_data/core/pref_names.h"
 #include "components/gcm_driver/gcm_buildflags.h"
 #include "components/omnibox/browser/omnibox_prefs.h"
@@ -90,8 +91,6 @@ const PrefsUtil::TypedPrefMap& BravePrefsUtil::GetWhitelistedKeys() {
         settings_api::PrefType::PREF_TYPE_BOOLEAN;
   (*s_brave_whitelist)[kNewTabPageShowClock] =
         settings_api::PrefType::PREF_TYPE_BOOLEAN;
-  (*s_brave_whitelist)[kNewTabPageShowTopSites] =
-        settings_api::PrefType::PREF_TYPE_BOOLEAN;
   (*s_brave_whitelist)[kNewTabPageShowStats] =
         settings_api::PrefType::PREF_TYPE_BOOLEAN;
   (*s_brave_whitelist)[kNewTabPageShowRewards] =
@@ -157,6 +156,9 @@ const PrefsUtil::TypedPrefMap& BravePrefsUtil::GetWhitelistedKeys() {
 #endif
   // Omnibox pref
   (*s_brave_whitelist)[omnibox::kPreventUrlElisionsInOmnibox] =
+      settings_api::PrefType::PREF_TYPE_BOOLEAN;
+  // Top sites visible pref
+  (*s_brave_whitelist)[prefs::kNtpShortcutsVisible] =
       settings_api::PrefType::PREF_TYPE_BOOLEAN;
 
   return *s_brave_whitelist;

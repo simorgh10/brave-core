@@ -37,7 +37,6 @@ const base::Feature kBraveEphemeralStorage{"EphemeralStorage",
 class EphemeralStorageNamespaces
     : public GarbageCollected<EphemeralStorageNamespaces>,
       public Supplement<Page> {
-  USING_GARBAGE_COLLECTED_MIXIN(StorageNamespace);
 
  public:
   EphemeralStorageNamespaces(StorageController* controller,

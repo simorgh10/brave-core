@@ -59,8 +59,6 @@ class Confirmations {
 
   privacy::UnblindedTokens* get_unblinded_payment_tokens();
 
-  void Save();
-
  private:
   bool is_initialized_ = false;
 
@@ -71,13 +69,14 @@ class Confirmations {
   void RemoveConfirmationFromRetryQueue(
       const ConfirmationInfo& confirmation);
 
+  void Save();
   void OnSaved(
       const Result result);
 
   void Load();
   void OnLoaded(
       const Result result,
-      const std::string& json);
+      const std::string& encrypted_json);
 
   AdsImpl* ads_;  // NOT OWNED
 
